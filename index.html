@@ -1,0 +1,1714 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6e6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Metal Complex Mass Generator</title>
+<style>
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eef1f4; --text:#1b1f24; --muted:#5f6b7a;
+  --border:#d9dee4; --accent:#0f6e6e; --accent-2:#e3f2f1; --accent-text:#ffffff;
+  --danger:#b42318; --danger-bg:#fdecea; --warn-bg:#fff6e0; --warn-text:#7a5300; --sel:#d6efec;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --radius:12px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111417; --surface:#1a1e23; --surface-2:#232830; --text:#e6e9ed; --muted:#9aa5b1;
+    --border:#2f363f; --accent:#3fb5ad; --accent-2:#1d3534; --accent-text:#08201f;
+    --danger:#ff8a80; --danger-bg:#3a1d1b; --warn-bg:#3a2f12; --warn-text:#f5d27a; --sel:#20403e;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111417; --surface:#1a1e23; --surface-2:#232830; --text:#e6e9ed; --muted:#9aa5b1;
+  --border:#2f363f; --accent:#3fb5ad; --accent-2:#1d3534; --accent-text:#08201f;
+  --danger:#ff8a80; --danger-bg:#3a1d1b; --warn-bg:#3a2f12; --warn-text:#f5d27a; --sel:#20403e;
+  --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+header.app{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:12px}
+header.app h1{font-size:17px;margin:0;font-weight:650;letter-spacing:-.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.app h1 small{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
+main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));display:block}
+.pane{display:none;flex-direction:column;gap:12px;min-width:0}
+.pane.active{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px;min-width:0}
+.card h2{font-size:15px;margin:0;font-weight:650}
+.card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card-head h2{flex:1}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{appearance:none;border:1px solid var(--border);background:var(--surface-2);border-radius:10px;padding:0 14px;min-height:40px;cursor:pointer;font-weight:550;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{filter:brightness(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.danger{color:var(--danger);background:transparent;border-color:var(--danger)}
+.btn.ghost{background:transparent}
+.btn.icon{width:40px;padding:0;font-size:20px;line-height:1}
+.btn.big{min-height:48px;width:100%;font-size:16px}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px}
+input[type=text],input[type=search],input[type=number],select,textarea{width:100%;min-height:40px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:8px 10px;font-size:16px}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:550}
+label.field > input,label.field > select,label.field > textarea{color:var(--text);font-weight:400}
+.check{display:flex;align-items:center;gap:10px;min-height:40px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:10px;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+th{background:var(--surface-2);font-weight:600;font-size:12.5px;color:var(--muted);position:sticky;top:0;z-index:1}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.mono{font-family:var(--mono);font-size:13px}
+tbody.clickable tr{cursor:pointer}
+tbody.clickable tr:hover td{background:var(--surface-2)}
+td.act{width:1%;padding:4px 6px}
+.add-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--accent);background:var(--accent-2);color:var(--accent);font-size:20px;font-weight:600;cursor:pointer;line-height:1}
+.add-btn.added{opacity:.45}
+.empty{padding:18px 12px;text-align:center;color:var(--muted);font-size:14px}
+.lib-table{max-height:38vh}
+.constraint-row td input[type=number],.constraint-row td input[type=text]{width:72px;min-height:36px;padding:4px 8px;text-align:right}
+.constraint-row td input:disabled{background:var(--surface-2);color:var(--muted)}
+.rm-btn{width:32px;height:32px;border:none;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;border-radius:8px}
+.rm-btn:hover{background:var(--danger-bg);color:var(--danger)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.msg{border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:10px}
+.msg.error{background:var(--danger-bg);color:var(--danger)}
+.msg.warn{background:var(--warn-bg);color:var(--warn-text)}
+.msg.info{background:var(--accent-2);color:var(--text)}
+.msg ul{margin:4px 0 0;padding-left:18px}
+.results-table{max-height:calc(100vh - 330px);min-height:200px}
+#resTable tbody tr{cursor:pointer}
+#resTable tbody tr.sel td{background:var(--sel)}
+#resTable th.sortable{cursor:pointer;user-select:none}
+#resTable th .arrow{opacity:.7;margin-left:3px}
+.stat{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--accent-text);font-size:11px;font-weight:700;line-height:18px;text-align:center;margin-left:4px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;border:none;background:transparent;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button.active{color:var(--accent)}
+dialog{border:none;border-radius:16px;padding:0;background:var(--surface);color:var(--text);width:min(520px,calc(100vw - 24px));max-height:calc(100vh - 40px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{display:flex;flex-direction:column;gap:12px;padding:16px}
+dialog h3{margin:0;font-size:17px}
+.preview{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--surface-2);font-family:var(--mono);word-break:break-all}
+.preview.bad{background:var(--danger-bg);color:var(--danger);font-family:inherit}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dlg-actions .spacer{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .2s;z-index:100;max-width:calc(100vw - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:600px){
+  main{padding-left:12px;padding-right:12px}
+  .card{padding:10px}
+  th,td{padding:7px 6px;font-size:13.5px}
+  th{font-size:12px}
+  td.mono{font-size:12.5px}
+  .lib-table td:first-child{white-space:normal;word-break:break-word;min-width:56px}
+  .lib-table td.act,.constraint-row td.act{padding:4px 4px 4px 0}
+  .add-btn{width:34px;height:34px}
+  .constraint-row td input[type=number],.constraint-row td input[type=text]{width:54px}
+  #resTable .col-formula,#resTable .long{display:none}
+  #resTable th span.short{display:inline}
+  #resTable td.rname{white-space:normal;word-break:break-word}
+  #resTable tr td.rname .sub{display:block}
+}
+#resTable td.rname .sub{display:none;color:var(--muted);font-size:12px;margin-top:2px}
+#resTable .short{display:none}
+details.data summary{cursor:pointer;font-weight:600;font-size:14px;min-height:32px;display:flex;align-items:center}
+.hidden{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (min-width:1100px){
+  nav.tabs{display:none}
+  main{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,1.05fr) minmax(420px,1.35fr);gap:14px;padding:14px 16px;height:calc(100vh - 58px)}
+  .pane,.pane.active{display:flex;overflow:auto;padding-bottom:8px}
+  .lib-table{max-height:none}
+  #pane-lib .card{display:flex;flex-direction:column;min-height:0;flex:1}
+  #pane-lib .card .table-wrap{flex:1;min-height:120px}
+  #pane-lib .card:last-child{flex:0 0 auto}
+  .results-table{max-height:none;flex:1}
+  #pane-res .card.res{display:flex;flex-direction:column;flex:1;min-height:0}
+  #toast{bottom:24px}
+}
+
+/* ---------- structure drawing ---------- */
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:550}
+.frow{display:flex;gap:8px}
+.frow input{flex:1;min-width:0;color:var(--text);font-weight:400}
+.struct-thumb{border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;padding:0;height:120px;width:100%;display:block}
+.struct-thumb svg{width:100%;height:100%;display:block}
+#drawDlg{width:min(1320px,calc(100vw - 16px));height:min(920px,calc(100vh - 24px));max-height:none}
+#drawDlg[open]{display:flex}
+.dwrap{display:flex;flex-direction:column;gap:8px;padding:12px;width:100%;min-height:0}
+.dhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dhead h3{margin:0;font-size:17px}
+.khost{flex:1;position:relative;min-height:320px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
+.khost iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.kload{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:16px;text-align:center;background:#fff;color:#5f6b7a;font-size:14px;line-height:1.6}
+.kload code{font-family:var(--mono);background:#eef1f4;padding:1px 5px;border-radius:4px}
+.struct-thumb svg{--n:#3a6fd8;--o:#d2403a;--s:#a88400;--p:#d97400;--hal:#2c9a47;--br:#a5452b;--i:#8a3fb8;--b:#c2588f}
+.mol .bd{stroke:var(--text);stroke-width:1.6;stroke-linecap:round;fill:none}
+.mol .bd.dat{stroke:var(--accent)}
+.mol .ah{fill:var(--accent)}
+.mol .lab{fill:var(--text);text-anchor:middle;dominant-baseline:central;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:500;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.mol .mbg{fill:var(--accent-2);stroke:var(--accent);stroke-width:1.4}
+.mol .mlab{fill:var(--accent);font-weight:700}
+.mol .err{fill:none;stroke:var(--danger);stroke-width:2;stroke-dasharray:3 2}
+.mol .warn{fill:none;stroke:#d39b00;stroke-width:2;stroke-dasharray:3 2}
+.dstatus{display:flex;flex-direction:column;gap:6px}
+.dmsgs{display:flex;flex-direction:column;gap:4px;max-height:96px;overflow:auto}
+.dmsgs .msg{margin:0;padding:6px 10px;font-size:13px}
+.dhint{font-size:12.5px;color:var(--muted);line-height:1.45}
+@media (max-width:600px){ .dhint{display:none} }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>Metal Complex Mass Generator <small>v1.0</small></h1>
+</header>
+
+<main>
+  <!-- ============ LIBRARY PANE ============ -->
+  <section class="pane active" id="pane-lib" aria-label="Libraries">
+    <div class="card">
+      <div class="card-head">
+        <h2>Ligand Library</h2>
+        <button class="btn primary" id="newLigand">New</button>
+      </div>
+      <input type="search" id="ligSearch" placeholder="Search ligands by name or formula" aria-label="Search ligands" style="margin-bottom:8px">
+      <div class="table-wrap lib-table">
+        <table>
+          <thead><tr><th>Name</th><th>Formula</th><th class="num">Mass</th><th class="num">Dent.</th><th class="act"><span class="sr-only">Add</span></th></tr></thead>
+          <tbody id="ligBody" class="clickable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Counterion Library</h2>
+        <button class="btn primary" id="newCounterion">New</button>
+      </div>
+      <input type="search" id="ciSearch" placeholder="Search counterions" aria-label="Search counterions" style="margin-bottom:8px">
+      <div class="table-wrap lib-table">
+        <table>
+          <thead><tr><th>Name</th><th>Formula</th><th class="num">Charge</th><th class="num">Exact Mass</th><th class="act"><span class="sr-only">Add</span></th></tr></thead>
+          <tbody id="ciBody" class="clickable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <details class="data">
+        <summary>Library data &amp; backup</summary>
+        <p class="small muted">Libraries are saved in this browser on this device. Back them up to move them to another device.</p>
+        <div class="btn-row">
+          <button class="btn" id="backupBtn">Back up libraries</button>
+          <button class="btn" id="restoreBtn">Restore from backup</button>
+          <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ PROJECT PANE ============ -->
+  <section class="pane" id="pane-proj" aria-label="Project builder">
+    <div class="card">
+      <div class="card-head"><h2>Global Settings</h2></div>
+      <div class="grid2">
+        <label class="field">Metal
+          <select id="metal"></select>
+        </label>
+        <label class="field">Max Denticity
+          <input type="number" id="maxDent" min="1" step="1" inputmode="numeric">
+        </label>
+        <label class="field" style="grid-column:1/-1">Max Total Counterion Charge
+          <input type="number" id="maxCharge" min="0" step="1" inputmode="numeric">
+        </label>
+      </div>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="homogeneous"> Only homogeneous counterion species</label>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Selected Ligands</h2><span class="stat" id="ligCount"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Ligand</th><th>Constraints</th><th class="num">Min</th><th class="num">Max</th><th class="act"></th></tr></thead>
+          <tbody id="projLigBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Selected Counterions</h2><span class="stat" id="ciCount"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Counterion</th><th>Constraints</th><th class="num">Min</th><th class="num">Max</th><th class="act"></th></tr></thead>
+          <tbody id="projCiBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <button class="btn primary big" id="generateBtn">Generate</button>
+  </section>
+
+  <!-- ============ RESULTS PANE ============ -->
+  <section class="pane" id="pane-res" aria-label="Results">
+    <div class="card res">
+      <div class="card-head"><h2>Results</h2><span class="stat" id="resStat"></span></div>
+      <div id="resMessages"></div>
+      <div class="table-wrap results-table">
+        <table id="resTable">
+          <thead><tr>
+            <th class="sortable" data-key="name">Name<span class="arrow"></span></th>
+            <th class="sortable col-formula" data-key="formula">Formula<span class="arrow"></span></th>
+            <th class="sortable num" data-key="mass">Exact Mass<span class="arrow"></span></th>
+            <th class="sortable num" data-key="dent"><span class="long">Total Denticity</span><span class="short">Dent.</span><span class="arrow"></span></th>
+            <th class="sortable num" data-key="charge"><span class="long">Total Anion Charge</span><span class="short">Chg.</span><span class="arrow"></span></th>
+          </tr></thead>
+          <tbody id="resBody"></tbody>
+        </table>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn" id="copySel" disabled>Copy selected</button>
+        <button class="btn" id="copyAll" disabled>Copy entire table</button>
+        <button class="btn ghost" id="clearSel" disabled>Clear selection</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Export</h2></div>
+      <label class="field" style="margin-bottom:10px">Database Version
+        <input type="text" id="dbVersion" placeholder="e.g. 1.0">
+      </label>
+      <div class="btn-row">
+        <button class="btn" id="exportCsv" disabled>Generic CSV</button>
+        <button class="btn" id="exportXlsx" disabled>Excel (.xlsx)</button>
+        <button class="btn" id="exportMH" disabled>MassHunter CSV</button>
+      </div>
+      <p class="small muted" style="margin:10px 0 6px">MassHunter template: <span id="mhTemplateName"></span></p>
+      <div class="btn-row">
+        <button class="btn ghost" id="loadTemplate">Load template CSV</button>
+        <button class="btn ghost hidden" id="resetTemplate">Use built-in template</button>
+        <input type="file" id="templateFile" accept=".csv,text/csv,text/plain" class="hidden">
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Sections">
+  <button data-tab="pane-lib" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Libraries
+  </button>
+  <button data-tab="pane-proj">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="5" r="2"/><circle cx="19.5" cy="5" r="2"/><circle cx="4.5" cy="19" r="2"/><circle cx="19.5" cy="19" r="2"/><path d="M6 6.5l4 3.5M18 6.5l-4 3.5M6 17.5l4-3.5M18 17.5l-4-3.5"/></svg>
+    <span>Project<span class="badge hidden" id="projBadge"></span></span>
+  </button>
+  <button data-tab="pane-res">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16V9M12 16V5M17 16v-4"/></svg>
+    <span>Results<span class="badge hidden" id="resBadge"></span></span>
+  </button>
+</nav>
+
+<!-- Editor dialog (shared by ligands and counterions) -->
+<dialog id="editor">
+  <form method="dialog" id="editorForm" novalidate>
+    <h3 id="edTitle">Ligand</h3>
+    <label class="field">Name
+      <input type="text" id="edName" autocomplete="off" required>
+    </label>
+    <div class="field">
+      <label for="edFormula">Formula</label>
+      <div class="frow">
+        <input type="text" id="edFormula" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="e.g. C10H8N2">
+        <button type="button" class="btn" id="edDraw" title="Draw the structure and calculate the formula from it">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><path d="M12 7.5l3.9 2.25v4.5"/></svg>
+          Draw
+        </button>
+      </div>
+    </div>
+    <button type="button" class="struct-thumb hidden" id="edThumb" title="Edit the drawn structure" aria-label="Drawn structure, click to edit"></button>
+    <div class="preview" id="edPreview">Exact mass is calculated from the formula.</div>
+    <label class="field" id="edDentWrap">Denticity
+      <input type="number" id="edDent" min="1" step="1" inputmode="numeric">
+    </label>
+    <label class="field" id="edChargeWrap">Charge
+      <input type="number" id="edCharge" step="1" inputmode="numeric">
+    </label>
+    <label class="field" id="edSmilesWrap">SMILES (optional)
+      <input type="text" id="edSmiles" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
+    <label class="field" id="edNotesWrap">Notes (optional)
+      <textarea id="edNotes"></textarea>
+    </label>
+    <div class="msg error hidden" id="edError"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn danger" id="edDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="edCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="edSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Structure drawing dialog: Ketcher (opened from the ligand editor) -->
+<dialog id="drawDlg" aria-labelledby="drawTitle">
+  <div class="dwrap">
+    <div class="dhead">
+      <h3 id="drawTitle">Draw ligand</h3>
+      <span class="dhint">Dative bonds: choose <b>Dative</b> in Ketcher's bond tools and drag from the donor atom to the acceptor.
+        Link donor atoms to the metal with dative bonds, using <b>M</b> (Extended table → Generic groups) or the real metal; the metal centre isn't counted.</span>
+    </div>
+    <div class="khost" id="drawHost"><div class="kload" id="drawLoad">Loading Ketcher…</div></div>
+    <div class="dstatus">
+      <div class="preview" id="drawFormula" aria-live="polite"></div>
+      <div class="dmsgs" id="drawMsgs"></div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="drawCancel">Cancel</button>
+      <button type="button" class="btn primary" id="drawUse">Use formula</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   chemistry  (port of chemistry.py)
+   Monoisotopic masses of the most abundant isotope of each element.
+   ===================================================================== */
+const MASSES = {
+  H:1.00782503207, D:2.0141017778, B:11.0093054, C:12.0, N:14.0030740048, O:15.99491461956,
+  F:18.99840322, Na:22.9897692809, Mg:23.9850417, Al:26.98153863, Si:27.9769265325,
+  P:30.97376163, S:31.97207100, Cl:34.96885268, K:38.96370668, Ca:39.96259098,
+  Ti:47.9479463, V:50.9439595, Cr:51.9405075, Mn:54.9380451, Fe:55.9349375, Co:58.9331950,
+  Ni:57.9353429, Cu:62.9295975, Zn:63.9291422, As:74.9215965, Se:79.9165213, Br:78.9183371,
+  Rb:84.911789738, Mo:97.9054082, Ru:101.9043493, Rh:102.905504, Pd:105.903486, Ag:106.905097,
+  Cd:113.9033585, Sn:119.9021947, Sb:120.9038157, I:126.904473, Cs:132.905451933,
+  W:183.9509312, Re:186.9557531, Os:191.9614807, Ir:192.9629264, Pt:194.9647911,
+  Au:196.9665687, Hg:201.970643, Li:7.01600455
+};
+const METALS = ["Ru","Os","Fe","Co","Rh","Ir","Pt","Pd","Ni","Cu"];
+
+function parseFormula(input){
+  const s = String(input ?? "").replace(/\s+/g, "");
+  if (!s) throw new Error("Formula is empty.");
+  let i = 0;
+  const add = (o, el, n) => { o[el] = (o[el] || 0) + n; };
+  function readCount(){
+    const m = /^\d+/.exec(s.slice(i));
+    if (!m) {
+      if (s[i] === ".") throw new Error("Stoichiometries must be whole numbers.");
+      return 1;
+    }
+    i += m[0].length;
+    if (s[i] === ".") throw new Error("Stoichiometries must be whole numbers.");
+    const n = parseInt(m[0], 10);
+    if (n < 1) throw new Error("Stoichiometry must be at least 1.");
+    return n;
+  }
+  function group(depth){
+    const counts = {};
+    while (i < s.length) {
+      const ch = s[i];
+      if (ch === "(") {
+        i++;
+        const inner = group(depth + 1);
+        if (s[i] !== ")") throw new Error("Unclosed parenthesis.");
+        i++;
+        const n = readCount();
+        for (const el in inner) add(counts, el, inner[el] * n);
+      } else if (ch === ")") {
+        if (depth === 0) throw new Error('Unexpected ")".');
+        break;
+      } else if (/[A-Z]/.test(ch)) {
+        let el = ch;
+        if (/[a-z]/.test(s[i + 1] || "")) el += s[i + 1];
+        if (!(el in MASSES)) throw new Error(`Unknown element "${el}".`);
+        i += el.length;
+        add(counts, el, readCount());
+      } else if (/\d/.test(ch)) {
+        throw new Error("A number must follow an element symbol.");
+      } else {
+        throw new Error(`Invalid character "${ch}". Element symbols start with a capital letter.`);
+      }
+    }
+    return counts;
+  }
+  const counts = group(0);
+  if (!Object.keys(counts).length) throw new Error("Formula contains no elements.");
+  return counts;
+}
+
+/* Hill order: C, H, then remaining elements alphabetically.
+   Without carbon, all elements are alphabetical. */
+function hillFormula(counts){
+  const els = Object.keys(counts).filter(e => counts[e] > 0);
+  let order;
+  if (counts.C) {
+    order = ["C"];
+    if (counts.H) order.push("H");
+    order.push(...els.filter(e => e !== "C" && e !== "H").sort());
+  } else {
+    order = els.sort();
+  }
+  return order.map(e => e + (counts[e] > 1 ? counts[e] : "")).join("");
+}
+function massOf(counts){
+  let m = 0;
+  for (const el in counts) m += MASSES[el] * counts[el];
+  return m;
+}
+function analyseFormula(str){
+  const counts = parseFormula(str);
+  return { counts, formula: hillFormula(counts), mass: massOf(counts) };
+}
+/* STRUCTURE-CHEM-BEGIN =================================================
+   Formula from a drawn structure (molfile exported by Ketcher).
+   Model: { atoms:[{id,x,y,el,q,rad,val}], bonds:[{id,a,b,order,type}] }
+     type "covalent" (order 1-3), "aromatic" or "dative" (a → b).
+
+   Metal centre: the generic "M" atom (also *, A, Q, R#), or any metal
+   atom that is bonded by a dative bond. Metal centres are not counted.
+   A metal with no dative bond (e.g. the Fe of dppf) IS counted.
+
+   Implicit hydrogens use an electron-counting valence model:
+     v  = valence electrons − formal charge
+     normal valence = v (v ≤ 4) or 8 − v (v > 4); heavier p-block
+     elements may also be hypervalent (v−2, v … e.g. P 3/5, S 2/4/6).
+   Dative bonds never consume a valence slot of the donor; the donor
+   must instead keep one lone pair per arrow (so a carbene carbon C→M
+   with two bonds gets 0 H, not 2). An acceptor that has lone pairs
+   (v ≥ 4, e.g. the O of N→O) loses 2 from its valence per arrow; an
+   electron-deficient acceptor (v < 4, e.g. B in H3N→BH3) keeps its
+   valence. A dative bond between a ligand atom and a metal centre
+   always makes the ligand atom the donor, whichever way it is drawn.
+   Ordinary bonds to the metal count like any covalent bond (X-type
+   donors, e.g. the O–M of acac⁻ or the C–M of cyclometalated ppy⁻).
+   Aromatic bonds are first converted to a Kekulé structure.
+   ===================================================================== */
+const PLACEHOLDER = "M";
+const PLACEHOLDER_LABELS = new Set(["M", "*", "A", "Q", "R#", "MH", "X"]);
+const VALENCE_E = { H:1, D:1, Li:1, Na:1, K:1, Rb:1, Cs:1, Mg:2, Ca:2, B:3, Al:3, C:4, Si:4, Sn:4,
+  N:5, P:5, As:5, Sb:5, O:6, S:6, Se:6, F:7, Cl:7, Br:7, I:7 };
+const PERIOD2 = new Set(["B","C","N","O","F"]);
+const S_BLOCK = new Set(["Li","Na","K","Rb","Cs","Mg","Ca"]);
+const AROMATIC_HETERO = new Set(["N","O","S","Se","P","As"]);
+
+function valenceOptions(el, q){
+  if (!(el in VALENCE_E)) return null;               // metals etc.: no implicit H
+  const v = VALENCE_E[el] - q;
+  if (el === "H" || el === "D") return [v === 1 ? 1 : 0];
+  if (S_BLOCK.has(el)) return v >= 0 ? [v] : [];
+  if (v < 0 || v > 8) return [];
+  const base = v <= 4 ? v : 8 - v, opts = [base];
+  if (!PERIOD2.has(el) && v > 4) for (let k = base + 2; k <= v; k += 2) opts.push(k);
+  return opts;
+}
+const radicalElectrons = a => a.rad === 2 ? 1 : (a.rad === 1 || a.rad === 3) ? 2 : 0;
+
+/* Which atoms are metal centres, and per-atom bond bookkeeping. */
+function bondContext(mol){
+  const byId = new Map(mol.atoms.map(a => [a.id, a]));
+  const centre = new Set(mol.atoms.filter(a => PLACEHOLDER_LABELS.has(a.el)).map(a => a.id));
+  for (const b of mol.bonds) if (b.type === "dative") for (const [x, y] of [[b.a, b.b], [b.b, b.a]]) {
+    const X = byId.get(x), Y = byId.get(y);
+    if (X && Y && !(X.el in VALENCE_E) && X.el in MASSES && (Y.el in VALENCE_E)) centre.add(x);
+  }
+  const info = new Map(mol.atoms.map(a => [a.id, { h: 0, explicit: 0, arom: 0, dIn: 0, dOut: 0, toM: false, error: null, note: null, block: false }]));
+  for (const b of mol.bonds) {
+    const A = byId.get(b.a), B = byId.get(b.b);
+    if (!A || !B) continue;
+    const ia = info.get(A.id), ib = info.get(B.id), cA = centre.has(A.id), cB = centre.has(B.id);
+    if (cA && !cB) ib.toM = true;
+    if (cB && !cA) ia.toM = true;
+    if (b.type === "dative") {
+      if (cA && cB) continue;
+      if (cA) ib.dOut++;                       // ligand atom donates to the metal
+      else if (cB) ia.dOut++;
+      else { ia.dOut++; ib.dIn++; }
+    } else if (b.type === "aromatic") {
+      ia.arom++; ib.arom++; ia.explicit += 1; ib.explicit += 1;
+    } else {
+      ia.explicit += b.order; ib.explicit += b.order;
+    }
+  }
+  return { byId, centre, info };
+}
+/* Allowed total valences (sum of normal bond orders + implicit H). */
+function valenceCandidates(a, it){
+  const q = a.q || 0;
+  let opts0 = valenceOptions(a.el, q);
+  if (opts0 === null) return null;
+  if (a.val) opts0 = [a.val];
+  const r = radicalElectrons(a);
+  if (r) opts0 = opts0.map(x => x - r).filter(x => x >= 0);
+  const v = VALENCE_E[a.el] - q;
+  let opts = opts0;
+  if (it.dIn && v >= 4) opts = opts.map(x => x - 2 * it.dIn).filter(x => x >= 0);
+  let cand = opts;
+  if (it.dOut) {
+    cand = opts.filter(x => v - r - x >= 2 * it.dOut);
+    if (v <= 4 && v - r - 2 * it.dOut >= 0) cand.push(v - r - 2 * it.dOut);
+    cand = [...new Set(cand)].sort((x, y) => x - y);
+  }
+  return { opts0, opts, cand, v };
+}
+
+/* Turn aromatic bonds into alternating single/double bonds.
+   Atoms that can take one more bond must get exactly one double bond;
+   pyrrole-type heteroatoms (N, O, S …) may be left without one. */
+function kekulize(mol){
+  if (!mol.bonds.some(b => b.type === "aromatic")) return { mol, ok: true };
+  const out = { atoms: mol.atoms, bonds: mol.bonds.map(b => ({ ...b })) };
+  const { byId, centre, info } = bondContext(mol);
+  const arom = out.bonds.filter(b => b.type === "aromatic");
+  const nodes = [...new Set(arom.flatMap(b => [b.a, b.b]))].filter(id => !centre.has(id));
+  const need = new Map();                    // id -> "must" | "may"
+  for (const id of nodes) {
+    const a = byId.get(id), it = info.get(id), vc = valenceCandidates(a, it);
+    const canTake = vc ? vc.cand.some(x => x >= it.explicit + 1) : false;
+    if (!canTake) continue;
+    // an aromatic heteroatom whose lone pair can sit in the ring may stay single-bonded
+    const optional = AROMATIC_HETERO.has(a.el) && it.arom === 2 && it.explicit === 2;
+    need.set(id, optional ? "may" : "must");
+  }
+  const adj = new Map(nodes.map(id => [id, []]));
+  for (const b of arom) if (need.has(b.a) && need.has(b.b)) { adj.get(b.a).push(b); adj.get(b.b).push(b); }
+  const matched = new Set(), dbl = new Set();
+  let best = null, steps = 0;
+  const order = [...need.keys()].sort((x, y) => adj.get(x).length - adj.get(y).length);
+  const score = () => order.reduce((s, id) => s + (!matched.has(id) && need.get(id) === "must" ? 100 : 0) + (!matched.has(id) ? 1 : 0), 0);
+  (function search(i){
+    if (best && best.score === 0) return;
+    if (++steps > 200000) return;
+    while (i < order.length && matched.has(order[i])) i++;
+    if (i === order.length) { const s = score(); if (!best || s < best.score) best = { score: s, dbl: new Set(dbl) }; return; }
+    const id = order[i];
+    for (const b of adj.get(id)) {
+      const o = b.a === id ? b.b : b.a;
+      if (matched.has(o)) continue;
+      matched.add(id); matched.add(o); dbl.add(b);
+      search(i + 1);
+      matched.delete(id); matched.delete(o); dbl.delete(b);
+    }
+    search(i + 1);                          // leave this atom without a double bond
+  })(0);
+  for (const b of arom) { b.type = "covalent"; b.order = best && best.dbl.has(b) ? 2 : 1; }
+  return { mol: out, ok: !!best && best.score < 100 };
+}
+
+function analyseStructure(mol0){
+  const kek = kekulize(mol0), mol = kek.mol;
+  const { centre, info } = bondContext(mol);
+  const counts = {}, problems = [], notes = [];
+  let charge = 0, ligandAtoms = 0;
+  const donors = new Set(), foreign = new Set(), centreEls = new Set();
+  if (!kek.ok) problems.push({ id: null, msg: "The aromatic ring(s) could not be converted to alternating single/double bonds, so H counts may be wrong. Draw the ring with explicit double bonds (Kekulé form).", block: true });
+  for (const a of mol.atoms) {
+    const it = info.get(a.id);
+    if (centre.has(a.id)) { centreEls.add(a.el); continue; }
+    ligandAtoms++;
+    const q = a.q || 0;
+    charge += q;
+    if (it.toM) donors.add(a.id);
+    const vc = valenceCandidates(a, it);
+    if (vc === null) {
+      foreign.add(a.el);
+    } else {
+      const { opts0, opts, cand } = vc;
+      const val = cand.find(x => x >= it.explicit);
+      const label = a.el + (q ? fmtChargeSup(q) : "");
+      if (val !== undefined) {
+        it.h = val - it.explicit;
+      } else if (it.dIn && (!opts.length || it.explicit > Math.max(...opts))) {
+        it.block = true;   // the donor's H count would be wrong too, so never accept this
+        it.error = `${label} receives a dative bond but has no free valence as drawn. Check the arrow direction: it points from the donor (lone pair) to the acceptor.`;
+      } else if (it.dOut && opts0.length && it.explicit <= Math.max(...opts0)) {
+        it.note = `${label} donates a lone pair, but its bonds leave none as drawn, so 0 H is assumed. Adding formal charges (e.g. ⁻C≡O⁺) removes this note.`;
+      } else {
+        const max = opts0.length ? Math.max(...opts0) : 0;
+        it.error = `${label} has ${it.explicit} bond${it.explicit === 1 ? "" : "s"}, more than its maximum valence of ${max}.` +
+          (it.dOut ? " Dative bonds don't count, so this comes from the normal bonds." : "") + " Check the bonds or add a formal charge.";
+      }
+    }
+    counts[a.el] = (counts[a.el] || 0) + 1;
+    if (it.h) counts.H = (counts.H || 0) + it.h;
+    if (it.error) problems.push({ id: a.id, msg: it.error, block: it.block });
+    if (it.note) notes.push({ id: a.id, msg: it.note });
+  }
+  const infos = [];
+  for (const el of centreEls) if (el in MASSES) infos.push({ id: null, msg: `${el} has a dative bond, so it is treated as the metal centre and not counted.` });
+  for (const el of foreign) notes.push({ id: null, msg: `${el} is counted in the formula and gets no implicit H. If it is the metal centre, bond it with a dative bond or use M instead.` });
+  const formula = ligandAtoms ? hillFormula(counts) : "";
+  return { info, counts, formula, mass: ligandAtoms ? massOf(counts) : 0, charge, problems, notes,
+    infos, hasM: centre.size > 0, donorCount: donors.size, ligandAtoms, centre, kekule: mol };
+}
+function fmtChargeSup(q){
+  const sup = { "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹" };
+  return (Math.abs(q) > 1 ? String(Math.abs(q)).replace(/\d/g, d => sup[d]) : "") + (q > 0 ? "⁺" : "⁻");
+}
+
+/* MDL molfile reader (V3000 as written by Ketcher, or V2000). */
+function molblockToMol(text){
+  if (!text || !/M\s+END/.test(text)) return null;
+  const lines = String(text).split(/\r?\n/), atoms = [], bonds = [];
+  const ci = lines.findIndex(l => /V[23]000\s*$/.test(l));
+  if (ci < 0) return null;
+  try {
+    if (/V3000/.test(lines[ci])) {
+      let mode = null;
+      for (const ln of lines) {
+        if (!ln.startsWith("M  V30 ")) continue;
+        const t = ln.slice(7).trim();
+        if (/^BEGIN ATOM/.test(t)) { mode = "a"; continue; }
+        if (/^BEGIN BOND/.test(t)) { mode = "b"; continue; }
+        if (/^END /.test(t)) { mode = null; continue; }
+        const f = t.split(/\s+/), prop = k => { const m = new RegExp(`\\b${k}=(-?\\d+)`).exec(t); return m ? +m[1] : 0; };
+        if (mode === "a") atoms.push({ n: +f[0], el: f[1].replace(/^"|"$/g, ""), x: +f[2], y: -f[3], q: prop("CHG"), rad: prop("RAD"), val: prop("VAL") });
+        else if (mode === "b") bonds.push({ t: +f[1], a: +f[2], b: +f[3] });
+      }
+    } else {
+      const na = parseInt(lines[ci].slice(0, 3), 10), nb = parseInt(lines[ci].slice(3, 6), 10);
+      const chg = { 1: 3, 2: 2, 3: 1, 5: -1, 6: -2, 7: -3 };
+      for (let i = 0; i < na; i++) {
+        const l = lines[ci + 1 + i];
+        atoms.push({ n: i + 1, x: +l.slice(0, 10), y: -l.slice(10, 20), el: l.slice(31, 34).trim(), q: chg[parseInt(l.slice(36, 39), 10)] || 0, rad: 0, val: 0 });
+      }
+      for (let i = 0; i < nb; i++) {
+        const l = lines[ci + 1 + na + i];
+        bonds.push({ a: parseInt(l.slice(0, 3), 10), b: parseInt(l.slice(3, 6), 10), t: parseInt(l.slice(6, 9), 10) });
+      }
+      for (const l of lines.slice(ci + 1 + na + nb)) {
+        const m = /^M {2}(CHG|RAD)/.exec(l);
+        if (!m) continue;
+        const f = l.slice(6).trim().split(/\s+/).map(Number);
+        for (let k = 1; k + 1 < f.length; k += 2) { const at = atoms[f[k] - 1]; if (at) at[m[1] === "CHG" ? "q" : "rad"] = f[k + 1]; }
+      }
+    }
+  } catch { return null; }
+  if (!atoms.length || atoms.some(a => !isFinite(a.x) || !isFinite(a.y))) return null;
+  const byN = new Map(atoms.map(a => [a.n, a]));
+  let len = 0, nlen = 0;
+  for (const b of bonds) { const A = byN.get(b.a), B = byN.get(b.b); if (A && B) { len += Math.hypot(A.x - B.x, A.y - B.y); nlen++; } }
+  const k = nlen && len > 0 ? nlen / len : 1;
+  let id = 1;
+  const mol = { atoms: [], bonds: [] }, map = new Map();
+  for (const a of atoms) {
+    const el = PLACEHOLDER_LABELS.has(a.el) ? PLACEHOLDER : a.el;
+    const o = { id: id++, x: a.x * k, y: a.y * k, el, q: a.q || 0, rad: a.rad || 0, val: a.val > 0 ? a.val : 0 };
+    map.set(a.n, o.id); mol.atoms.push(o);
+  }
+  for (const b of bonds) {
+    if (!map.has(b.a) || !map.has(b.b) || b.a === b.b) continue;
+    const type = b.t === 9 ? "dative" : b.t === 4 ? "aromatic" : b.t === 10 ? "hydrogen" : "covalent";
+    if (type === "hydrogen") continue;       // hydrogen bonds don't affect the formula
+    mol.bonds.push({ id: id++, a: map.get(b.a), b: map.get(b.b), order: type === "covalent" ? Math.min(Math.max(b.t, 1), 3) : 1, type });
+  }
+  return mol;
+}
+/* STRUCTURE-CHEM-END */
+
+function mergeCounts(target, src, mult){
+  for (const el in src) target[el] = (target[el] || 0) + src[el] * mult;
+}
+
+/* =====================================================================
+   storage  (replaces database.py / SQLite with localStorage)
+   ===================================================================== */
+const DB_KEY = "mcmg.db.v1", PROJ_KEY = "mcmg.project.v1", PREF_KEY = "mcmg.prefs.v1";
+const DEFAULT_COUNTERIONS = [
+  { name: "Cl",      formula: "Cl",      charge: -1 },
+  { name: "PF6",     formula: "PF6",     charge: -1 },
+  { name: "NO3",     formula: "NO3",     charge: -1 },
+  { name: "CHOOH",   formula: "CHOOH",   charge: -1 },
+  { name: "CH3COOH", formula: "CH3COOH", charge: -1 },
+];
+function loadJSON(key, fallback){
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function saveJSON(key, value){
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch { toast("Could not save: browser storage is unavailable."); return false; }
+}
+
+const db = {
+  data: null,
+  init(){
+    this.data = loadJSON(DB_KEY, null) || { nextId: 1, ligands: [], counterions: [] };
+    if (!Array.isArray(this.data.ligands)) this.data.ligands = [];
+    if (!Array.isArray(this.data.counterions)) this.data.counterions = [];
+    if (this.data.counterions.length === 0) {          // seed if empty
+      for (const c of DEFAULT_COUNTERIONS) this.add("counterions", c, false);
+    }
+    this.save();
+  },
+  save(){ saveJSON(DB_KEY, this.data); },
+  now(){ return new Date().toISOString(); },
+  build(table, rec){
+    const a = analyseFormula(rec.formula);
+    const base = { name: rec.name.trim(), formula: a.formula, exact_mass: a.mass };
+    if (table === "ligands") {
+      return { ...base, denticity: rec.denticity, smiles: rec.smiles || "", molblock: rec.molblock || "", notes: rec.notes || "" };
+    }
+    return { ...base, charge: rec.charge };
+  },
+  add(table, rec, persist = true){
+    const row = { id: this.data.nextId++, ...this.build(table, rec) };
+    if (table === "ligands") { row.created_at = row.updated_at = this.now(); }
+    this.data[table].push(row);
+    if (persist) this.save();
+    return row;
+  },
+  get(table, id){ return this.data[table].find(r => r.id === id); },
+  update(table, id, rec){
+    const row = this.get(table, id);
+    if (!row) return null;
+    Object.assign(row, this.build(table, { ...row, ...rec }));
+    if (table === "ligands") row.updated_at = this.now();
+    this.save();
+    return row;
+  },
+  remove(table, id){
+    this.data[table] = this.data[table].filter(r => r.id !== id);
+    this.save();
+  },
+  search(table, q){
+    q = (q || "").trim().toLowerCase();
+    const rows = [...this.data[table]].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    if (!q) return rows;
+    return rows.filter(r => r.name.toLowerCase().includes(q) || r.formula.toLowerCase().includes(q) || (r.notes || "").toLowerCase().includes(q));
+  },
+};
+
+/* =====================================================================
+   project state
+   ===================================================================== */
+const project = Object.assign({
+  metal: "Ru", maxDent: 6, maxCharge: 4, homogeneous: false,
+  ligands: [],      // {id, constrained, min, max}
+  counterions: [],  // {id, constrained, min, max}
+}, loadJSON(PROJ_KEY, {}));
+const prefs = Object.assign({ dbVersion: "1.0", mhTemplate: null, mhTemplateName: null }, loadJSON(PREF_KEY, {}));
+function saveProject(){ saveJSON(PROJ_KEY, project); }
+function savePrefs(){ saveJSON(PREF_KEY, prefs); }
+
+/* =====================================================================
+   helpers
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtMass = (m, d = 5) => Number(m).toFixed(d);
+const fmtCharge = q => (q > 0 ? "+" : q < 0 ? "−" : "") + Math.abs(q);
+let toastTimer;
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function download(filename, content, mime){
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); return ok;
+  }
+}
+function stamp(){
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+/* =====================================================================
+   library widgets
+   ===================================================================== */
+function renderLigands(){
+  const rows = db.search("ligands", $("#ligSearch").value);
+  const inProj = new Set(project.ligands.map(l => l.id));
+  $("#ligBody").innerHTML = rows.length ? rows.map(r => `
+    <tr data-id="${r.id}" title="Tap to edit">
+      <td>${esc(r.name)}</td>
+      <td class="mono">${esc(r.formula)}</td>
+      <td class="num">${fmtMass(r.exact_mass, 4)}</td>
+      <td class="num">${r.denticity}</td>
+      <td class="act"><button class="add-btn${inProj.has(r.id) ? " added" : ""}" data-add="${r.id}" aria-label="Add ${esc(r.name)} to project" title="Add to project">+</button></td>
+    </tr>`).join("")
+    : `<tr><td colspan="5" class="empty">${db.data.ligands.length ? "No ligands match your search." : "No ligands yet. Tap <b>New</b> to add one, e.g. bpy, C10H8N2, denticity 2."}</td></tr>`;
+}
+function renderCounterions(){
+  const rows = db.search("counterions", $("#ciSearch").value);
+  const inProj = new Set(project.counterions.map(c => c.id));
+  $("#ciBody").innerHTML = rows.length ? rows.map(r => `
+    <tr data-id="${r.id}" title="Tap to edit">
+      <td>${esc(r.name)}</td>
+      <td class="mono">${esc(r.formula)}</td>
+      <td class="num">${fmtCharge(r.charge)}</td>
+      <td class="num">${fmtMass(r.exact_mass, 4)}</td>
+      <td class="act"><button class="add-btn${inProj.has(r.id) ? " added" : ""}" data-add="${r.id}" aria-label="Add ${esc(r.name)} to project" title="Add to project">+</button></td>
+    </tr>`).join("")
+    : `<tr><td colspan="5" class="empty">${db.data.counterions.length ? "No counterions match your search." : "No counterions."}</td></tr>`;
+}
+function libClick(table, e){
+  const add = e.target.closest("[data-add]");
+  if (add) { e.stopPropagation(); addToProject(table, Number(add.dataset.add)); return; }
+  const tr = e.target.closest("tr[data-id]");
+  if (tr) openEditor(table, Number(tr.dataset.id));
+}
+$("#ligBody").addEventListener("click", e => libClick("ligands", e));
+$("#ciBody").addEventListener("click", e => libClick("counterions", e));
+$("#ligSearch").addEventListener("input", renderLigands);
+$("#ciSearch").addEventListener("input", renderCounterions);
+$("#newLigand").addEventListener("click", () => openEditor("ligands", null));
+$("#newCounterion").addEventListener("click", () => openEditor("counterions", null));
+
+/* ---------------- editor dialog ---------------- */
+const editor = { table: null, id: null, molblock: "", structFormula: null };
+function openEditor(table, id){
+  editor.table = table; editor.id = id;
+  const isLig = table === "ligands";
+  const row = id != null ? db.get(table, id) : null;
+  $("#edTitle").textContent = (row ? "Edit " : "New ") + (isLig ? "ligand" : "counterion");
+  $("#edName").value = row ? row.name : "";
+  $("#edFormula").value = row ? row.formula : "";
+  $("#edDent").value = row && isLig ? row.denticity : (isLig ? 2 : "");
+  $("#edCharge").value = row && !isLig ? row.charge : (!isLig ? -1 : "");
+  $("#edSmiles").value = row && isLig ? row.smiles || "" : "";
+  $("#edNotes").value = row && isLig ? row.notes || "" : "";
+  $("#edDentWrap").classList.toggle("hidden", !isLig);
+  $("#edSmilesWrap").classList.toggle("hidden", !isLig);
+  $("#edNotesWrap").classList.toggle("hidden", !isLig);
+  $("#edChargeWrap").classList.toggle("hidden", isLig);
+  $("#edDraw").classList.toggle("hidden", !isLig);
+  editor.molblock = isLig && row ? row.molblock || "" : "";
+  const m0 = editor.molblock ? molblockToMol(editor.molblock) : null;
+  editor.structFormula = m0 ? analyseStructure(m0).formula : null;
+  $("#edDelete").classList.toggle("hidden", !row);
+  $("#edError").classList.add("hidden");
+  updatePreview();
+  $("#editor").showModal();
+  updateThumb();
+  if (!row) setTimeout(() => $("#edName").focus(), 50);
+}
+function updatePreview(){
+  const p = $("#edPreview"), v = $("#edFormula").value;
+  if (!v.trim()) { p.className = "preview"; p.textContent = "Exact mass is calculated from the formula."; return; }
+  try {
+    const a = analyseFormula(v);
+    p.className = "preview";
+    p.textContent = `${a.formula}  ·  exact mass ${fmtMass(a.mass, 6)}` +
+      (editor.structFormula && editor.structFormula !== a.formula ? `  ·  ⚠ differs from the drawing (${editor.structFormula})` : "");
+  } catch (err) { p.className = "preview bad"; p.textContent = err.message; }
+}
+$("#edFormula").addEventListener("input", updatePreview);
+$("#edCancel").addEventListener("click", () => $("#editor").close());
+$("#edDelete").addEventListener("click", () => {
+  const row = db.get(editor.table, editor.id);
+  if (!row) return;
+  if (!confirm(`Delete "${row.name}" from the ${editor.table === "ligands" ? "ligand" : "counterion"} library? This cannot be undone.`)) return;
+  db.remove(editor.table, editor.id);
+  project[editor.table] = project[editor.table].filter(x => x.id !== editor.id);
+  saveProject();
+  $("#editor").close();
+  renderAll();
+  toast(`Deleted ${row.name}`);
+});
+$("#editorForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const isLig = editor.table === "ligands";
+  const errs = [];
+  const name = $("#edName").value.trim();
+  if (!name) errs.push("Name is required.");
+  else if (db.data[editor.table].some(r => r.id !== editor.id && r.name.toLowerCase() === name.toLowerCase()))
+    errs.push(`A ${isLig ? "ligand" : "counterion"} named "${name}" already exists.`);
+  try { analyseFormula($("#edFormula").value); } catch (err) { errs.push("Formula: " + err.message); }
+  const rec = { name, formula: $("#edFormula").value };
+  if (isLig) {
+    const d = Number($("#edDent").value);
+    if (!Number.isInteger(d) || d < 1) errs.push("Denticity must be a whole number of 1 or more.");
+    rec.denticity = d;
+    rec.smiles = $("#edSmiles").value.trim();
+    rec.molblock = editor.molblock || "";
+    rec.notes = $("#edNotes").value.trim();
+  } else {
+    const q = Number($("#edCharge").value);
+    if ($("#edCharge").value.trim() === "" || !Number.isInteger(q) || q === 0) errs.push("Charge must be a non-zero whole number, e.g. -1.");
+    rec.charge = q;
+  }
+  if (errs.length) {
+    const box = $("#edError");
+    box.innerHTML = errs.map(esc).join("<br>");
+    box.classList.remove("hidden");
+    return;
+  }
+  if (editor.id != null) db.update(editor.table, editor.id, rec);
+  else db.add(editor.table, rec);
+  $("#editor").close();
+  renderAll();
+  toast(`Saved ${name}`);
+});
+
+/* =====================================================================
+   structure drawing with Ketcher (vendored in vendor/ketcher, Apache-2.0)
+   Ketcher runs in an iframe; its molfile is analysed by analyseStructure().
+   ===================================================================== */
+const KETCHER_URL = "vendor/ketcher/index.html?disableMacromoleculesEditor=true";
+const kd = { frame: null, ketcher: null, ready: null, timer: null, seq: 0, an: null, molblock: "", busy: false };
+
+function ketcherReady(){
+  if (kd.ready) return kd.ready;
+  kd.ready = new Promise((resolve, reject) => {
+    if (location.protocol === "file:") return reject(new Error("file"));
+    const f = document.createElement("iframe");
+    f.title = "Ketcher structure editor";
+    f.src = KETCHER_URL;
+    $("#drawHost").appendChild(f);
+    kd.frame = f;
+    const t0 = Date.now();
+    (function poll(){
+      let k = null;
+      try { k = f.contentWindow && f.contentWindow.ketcher; } catch (e) { return reject(e); }
+      if (k && k.editor) {
+        kd.ketcher = k;
+        try { k.setSettings({ "general.dearomatize-on-load": true }); } catch {}
+        k.editor.subscribe("change", scheduleKetcherAnalysis);
+        return resolve(k);
+      }
+      if (Date.now() - t0 > 90000) return reject(new Error("timeout"));
+      setTimeout(poll, 150);
+    })();
+  });
+  kd.ready.catch(err => {                 // allow a retry after a failed load
+    if (err.message !== "file") { kd.frame?.remove(); kd.frame = null; kd.ready = null; }
+  });
+  return kd.ready;
+}
+function scheduleKetcherAnalysis(){ clearTimeout(kd.timer); kd.timer = setTimeout(analyseKetcher, 150); }
+async function analyseKetcher(){
+  if (!kd.ketcher) return;
+  const seq = ++kd.seq;
+  let mb = "", err = null;
+  try { mb = await kd.ketcher.getMolfile("v3000"); }
+  catch (e) { err = e; }
+  if (seq !== kd.seq) return;
+  kd.molblock = mb;
+  const mol = mb ? molblockToMol(mb) : null;
+  kd.an = mol ? analyseStructure(mol) : null;
+  renderDrawStatus(err);
+}
+function renderDrawStatus(err){
+  const an = kd.an, fEl = $("#drawFormula"), msgs = [];
+  fEl.className = "preview";
+  if (err) { fEl.className = "preview bad"; fEl.textContent = "Ketcher could not export this drawing as a molecule (reactions and macromolecules aren't supported here)."; }
+  else if (!an || !an.ligandAtoms) fEl.textContent = "The formula appears here as you draw.";
+  else {
+    const extra = [];
+    if (an.charge) extra.push(`net charge ${an.charge > 0 ? "+" : "−"}${Math.abs(an.charge)}`);
+    if (an.hasM) extra.push(`${an.donorCount} donor atom${an.donorCount === 1 ? "" : "s"} bound to the metal`);
+    fEl.textContent = `${an.formula}  ·  exact mass ${fmtMass(an.mass, 6)}${extra.length ? "  ·  " + extra.join("  ·  ") : ""}`;
+  }
+  if (an) {
+    for (const p of an.problems) msgs.push(`<div class="msg error">${esc(p.msg)}</div>`);
+    for (const p of an.notes) msgs.push(`<div class="msg warn">${esc(p.msg)}</div>`);    for (const p of an.infos) msgs.push(`<div class="msg info">${esc(p.msg)}</div>`);
+  }
+  $("#drawMsgs").innerHTML = msgs.join("");
+  const block = !!an && an.problems.some(p => p.block);
+  const use = $("#drawUse");
+  use.disabled = !!err || !an || !an.ligandAtoms || block;
+  use.textContent = an && an.problems.length && !block ? "Use formula anyway" : "Use formula";
+  use.title = block ? "Fix the highlighted problem first" : "";
+}
+
+/* ---- small read-only renderer for the thumbnail in the ligand dialog ---- */
+const EL_COLOR = { N:"var(--n)", O:"var(--o)", S:"var(--s)", Se:"var(--s)", P:"var(--p)", F:"var(--hal)", Cl:"var(--hal)", Br:"var(--br)", I:"var(--i)", B:"var(--b)" };
+
+function molMarkup(mol, an, o){
+  // o: { px(x,y) -> [X,Y], s: px per bond, hover, preview: {x1,y1,x2,y2} }
+  const s = o.s, out = [];
+  const pos = new Map(mol.atoms.map(a => [a.id, o.px(a.x, a.y)]));
+  const deg = new Map(mol.atoms.map(a => [a.id, 0]));
+  for (const b of mol.bonds) { deg.set(b.a, deg.get(b.a) + 1); deg.set(b.b, deg.get(b.b) + 1); }
+  const byId = new Map(mol.atoms.map(a => [a.id, a]));
+  const labeled = a => a.el !== "C" || !!a.q || deg.get(a.id) === 0;
+  const fs = Math.max(9, 0.4 * s), clear = fs * 0.62, sw = Math.max(1, Math.min(2.2, s / 26));
+  const f = n => n.toFixed(1);
+  const line = (x1, y1, x2, y2, cls = "bd", extra = "") => `<line class="${cls}" x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" style="stroke-width:${sw}"${extra}/>`;
+  for (const b of mol.bonds) {
+    const A = byId.get(b.a), B = byId.get(b.b);
+    if (!A || !B) continue;
+    const [x1, y1] = pos.get(A.id), [x2, y2] = pos.get(B.id);
+    const L = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / L, uy = (y2 - y1) / L, nx = -uy, ny = ux;
+    const t1 = labeled(A) ? (A.el === PLACEHOLDER ? fs * 0.78 : clear) : 0, t2 = labeled(B) ? (B.el === PLACEHOLDER ? fs * 0.78 : clear) : 0;
+    if (o.hover && o.hover.obj === b) out.push(`<line class="hlb" x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" style="stroke-width:${f(fs * 0.9)}"/>`);
+    if (L <= t1 + t2 + 2) continue;
+    const sx = x1 + ux * t1, sy = y1 + uy * t1, ex = x2 - ux * t2, ey = y2 - uy * t2;
+    if (b.type === "dative") {
+      const ah = Math.max(7, 0.24 * s), aw = ah * 0.42;
+      out.push(line(sx, sy, ex - ux * ah * 0.7, ey - uy * ah * 0.7, "bd dat"));
+      out.push(`<polygon class="ah" points="${f(ex)},${f(ey)} ${f(ex - ux * ah + nx * aw)},${f(ey - uy * ah + ny * aw)} ${f(ex - ux * ah - nx * aw)},${f(ey - uy * ah - ny * aw)}"/>`);
+      continue;
+    }
+    const off = Math.max(3, 0.15 * s);
+    if (b.order === 1) out.push(line(sx, sy, ex, ey));
+    else if (b.order === 3) { out.push(line(sx, sy, ex, ey)); for (const k of [1, -1]) out.push(line(sx + nx * off * k, sy + ny * off * k, ex + nx * off * k, ey + ny * off * k)); }
+    else {
+      let side = 0;
+      for (const [P, Q] of [[A, B], [B, A]]) for (const bb of mol.bonds) {
+        if (bb === b || (bb.a !== P.id && bb.b !== P.id)) continue;
+        const N = byId.get(bb.a === P.id ? bb.b : bb.a);
+        const [X, Y] = pos.get(N.id);
+        side += Math.sign((X - x1) * nx + (Y - y1) * ny);
+      }
+      if (!side || labeled(A) || labeled(B)) for (const k of [0.5, -0.5]) out.push(line(sx + nx * off * k, sy + ny * off * k, ex + nx * off * k, ey + ny * off * k));
+      else {
+        const k = Math.sign(side), sh = Math.min(off * 1.1, L * 0.2);
+        out.push(line(sx, sy, ex, ey));
+        out.push(line(sx + nx * off * k + ux * sh, sy + ny * off * k + uy * sh, ex + nx * off * k - ux * sh, ey + ny * off * k - uy * sh));
+      }
+    }
+  }
+  if (o.preview) out.push(`<line class="pv" x1="${f(o.preview.x1)}" y1="${f(o.preview.y1)}" x2="${f(o.preview.x2)}" y2="${f(o.preview.y2)}"/>`);
+  for (const a of mol.atoms) {
+    const [x, y] = pos.get(a.id), it = an?.info.get(a.id);
+    if (o.hover && o.hover.obj === a) out.push(`<circle class="hl" cx="${f(x)}" cy="${f(y)}" r="${f(fs * 0.85)}"/>`);
+    if (it?.error) out.push(`<circle class="err" cx="${f(x)}" cy="${f(y)}" r="${f(fs * 0.95)}"/>`);
+    else if (it?.note) out.push(`<circle class="warn" cx="${f(x)}" cy="${f(y)}" r="${f(fs * 0.95)}"/>`);
+    if (!labeled(a)) continue;
+    if (a.el === PLACEHOLDER) {
+      out.push(`<circle class="mbg" cx="${f(x)}" cy="${f(y)}" r="${f(fs * 0.72)}"/>`);
+      out.push(`<text class="lab mlab" x="${f(x)}" y="${f(y)}" style="font-size:${f(fs)}px;stroke:none">M</text>`);
+      continue;
+    }
+    const color = EL_COLOR[a.el] ? `fill:${EL_COLOR[a.el]};` : "";
+    const st = `style="${color}font-size:${f(fs)}px"`;
+    const ew = fs * (a.el.length > 1 ? 0.95 : 0.62);
+    out.push(`<text class="lab" x="${f(x)}" y="${f(y)}" ${st}>${esc(a.el)}</text>`);
+    const h = it?.h || 0;
+    let rightEdge = x + ew / 2;
+    if (h) {
+      let dx = 0; for (const n of mol.bonds) if (n.a === a.id || n.b === a.id) { const N = byId.get(n.a === a.id ? n.b : n.a); dx += N.x - a.x; }
+      const sub = h > 1 ? `<tspan dy="${f(fs * 0.28)}" style="font-size:${f(fs * 0.7)}px">${h}</tspan>` : "";
+      if (dx > 0.05) out.push(`<text class="lab" x="${f(x - ew / 2 - fs * 0.04)}" y="${f(y)}" style="${color}font-size:${f(fs)}px;text-anchor:end">H${sub}</text>`);
+      else { out.push(`<text class="lab" x="${f(x + ew / 2 + fs * 0.02)}" y="${f(y)}" style="${color}font-size:${f(fs)}px;text-anchor:start">H${sub}</text>`); rightEdge += fs * (h > 1 ? 1.15 : 0.72); }
+    }
+    if (a.q) {
+      const qs = (Math.abs(a.q) > 1 ? Math.abs(a.q) : "") + (a.q > 0 ? "+" : "−");
+      out.push(`<text class="lab" x="${f(rightEdge + fs * 0.05)}" y="${f(y - fs * 0.5)}" style="${color}font-size:${f(fs * 0.72)}px;text-anchor:start">${qs}</text>`);
+    }
+  }
+  return out.join("");
+}
+function renderThumb(el, mol){
+  const an = analyseStructure(mol), W = el.clientWidth || 300, H = el.clientHeight || 120;
+  const xs = mol.atoms.map(a => a.x), ys = mol.atoms.map(a => a.y);
+  const w = Math.max(...xs) - Math.min(...xs) + 1.6, h = Math.max(...ys) - Math.min(...ys) + 1.6;
+  const s = Math.min(36, W / w, H / h), cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  el.innerHTML = `<svg class="mol" viewBox="0 0 ${W} ${H}" aria-hidden="true">${molMarkup(an.kekule, an, { px: (x, y) => [(x - cx) * s + W / 2, (y - cy) * s + H / 2], s })}</svg>`;
+}
+
+/* ---- wiring with the ligand editor ---- */
+async function openDraw(){
+  const name = $("#edName").value.trim();
+  $("#drawTitle").textContent = name ? `Draw ${name}` : "Draw ligand";
+  kd.an = null; kd.molblock = "";
+  $("#drawFormula").className = "preview";
+  $("#drawFormula").textContent = "Loading Ketcher…";
+  $("#drawMsgs").innerHTML = "";
+  $("#drawUse").disabled = true;
+  const load = $("#drawLoad");
+  load.classList.toggle("hidden", !!kd.ketcher);
+  load.textContent = "Loading Ketcher…";
+  $("#drawDlg").showModal();
+  try {
+    const k = await ketcherReady();
+    await k.setMolecule(editor.molblock || "");
+    load.classList.add("hidden");
+    await analyseKetcher();
+  } catch (e) {
+    load.classList.remove("hidden");
+    load.innerHTML = e.message === "file"
+      ? `Ketcher can't run when this page is opened directly from a file.<br>Serve the folder instead, e.g. <code>python3 -m http.server</code>, and open <code>http://localhost:8000</code>.`
+      : `Ketcher failed to load (${esc(e.message || e)}). Close this dialog and try again.`;
+    $("#drawFormula").textContent = "Ketcher is not available.";
+  }
+}
+$("#edDraw").addEventListener("click", openDraw);
+$("#edThumb").addEventListener("click", openDraw);
+$("#drawCancel").addEventListener("click", () => $("#drawDlg").close());
+$("#drawUse").addEventListener("click", async () => {
+  await analyseKetcher();
+  const an = kd.an;
+  if (!an || !an.ligandAtoms || an.problems.some(p => p.block)) return;
+  editor.molblock = kd.molblock;
+  editor.structFormula = an.formula;
+  $("#edFormula").value = an.formula;
+  if (an.hasM && an.donorCount > 0 && editor.table === "ligands") {
+    const was = $("#edDent").value;
+    $("#edDent").value = an.donorCount;
+    if (String(was) !== String(an.donorCount)) toast(`Denticity set to ${an.donorCount} from the bonds to the metal`);
+  }
+  $("#drawDlg").close();
+  updatePreview();
+  updateThumb();
+});
+function updateThumb(){
+  const t = $("#edThumb"), mol = editor.molblock ? molblockToMol(editor.molblock) : null;
+  t.classList.toggle("hidden", !mol);
+  if (mol) renderThumb(t, mol);
+}
+
+/* =====================================================================
+   project builder
+   ===================================================================== */
+function addToProject(table, id){
+  const list = project[table];
+  const row = db.get(table, id);
+  if (list.some(x => x.id === id)) { toast(`${row.name} is already in the project`); return; }
+  list.push({ id, constrained: false, min: 0, max: null });
+  saveProject();
+  renderAll();
+  toast(`Added ${row.name} to project`);
+}
+function constraintRows(table){
+  const list = project[table];
+  return list.map((item, idx) => {
+    const r = db.get(table, item.id);
+    const label = table === "ligands" ? `${esc(r.name)} <span class="muted small">κ${r.denticity}</span>`
+                                      : `${esc(r.name)} <span class="muted small">${fmtCharge(r.charge)}</span>`;
+    const dis = item.constrained ? "" : "disabled";
+    return `<tr class="constraint-row" data-idx="${idx}">
+      <td>${label}</td>
+      <td><label class="check" style="min-height:36px"><input type="checkbox" data-f="constrained" ${item.constrained ? "checked" : ""} aria-label="Constrain ${esc(r.name)}"></label></td>
+      <td class="num"><input type="number" data-f="min" min="0" step="1" inputmode="numeric" value="${item.constrained ? item.min : 0}" ${dis} aria-label="Minimum ${esc(r.name)}"></td>
+      <td class="num"><input type="${item.constrained ? "number" : "text"}" data-f="max" min="0" step="1" inputmode="numeric" value="${item.constrained ? (item.max ?? "") : "∞"}" ${dis} aria-label="Maximum ${esc(r.name)}"></td>
+      <td class="act"><button class="rm-btn" data-rm="${idx}" aria-label="Remove ${esc(r.name)}" title="Remove">×</button></td>
+    </tr>`;
+  }).join("");
+}
+function renderProject(){
+  // drop references to deleted library rows
+  project.ligands = project.ligands.filter(x => db.get("ligands", x.id));
+  project.counterions = project.counterions.filter(x => db.get("counterions", x.id));
+  $("#projLigBody").innerHTML = constraintRows("ligands") ||
+    `<tr><td colspan="5" class="empty">Add ligands from the library with <b>+</b>.</td></tr>`;
+  $("#projCiBody").innerHTML = constraintRows("counterions") ||
+    `<tr><td colspan="5" class="empty">No counterions. Results will be bare cations.</td></tr>`;
+  $("#ligCount").textContent = project.ligands.length ? `${project.ligands.length} selected` : "";
+  $("#ciCount").textContent = project.counterions.length ? `${project.counterions.length} selected` : "";
+  const n = project.ligands.length + project.counterions.length;
+  $("#projBadge").textContent = n;
+  $("#projBadge").classList.toggle("hidden", !n);
+}
+function bindConstraintTable(tbodySel, table){
+  const tb = $(tbodySel);
+  tb.addEventListener("change", e => {
+    const tr = e.target.closest("tr[data-idx]");
+    if (!tr) return;
+    const item = project[table][Number(tr.dataset.idx)];
+    const f = e.target.dataset.f;
+    if (f === "constrained") {
+      item.constrained = e.target.checked;
+      if (item.constrained) {
+        item.min = 0;
+        item.max = table === "ligands" ? project.maxDent : project.maxCharge;
+      } else { item.min = 0; item.max = null; }
+      saveProject(); renderProject();
+    } else if (f === "min" || f === "max") {
+      const raw = e.target.value.trim();
+      item[f] = raw === "" ? (f === "max" ? null : 0) : Number(raw);
+      saveProject();
+    }
+  });
+  tb.addEventListener("click", e => {
+    const rm = e.target.closest("[data-rm]");
+    if (!rm) return;
+    project[table].splice(Number(rm.dataset.rm), 1);
+    saveProject(); renderAll();
+  });
+}
+bindConstraintTable("#projLigBody", "ligands");
+bindConstraintTable("#projCiBody", "counterions");
+
+const metalSel = $("#metal");
+metalSel.innerHTML = METALS.map(m => `<option value="${m}">${m}  (${fmtMass(MASSES[m], 4)})</option>`).join("");
+function bindSettings(){
+  metalSel.value = project.metal;
+  $("#maxDent").value = project.maxDent;
+  $("#maxCharge").value = project.maxCharge;
+  $("#homogeneous").checked = project.homogeneous;
+  metalSel.addEventListener("change", () => { project.metal = metalSel.value; saveProject(); });
+  $("#maxDent").addEventListener("change", e => { project.maxDent = e.target.value === "" ? NaN : Number(e.target.value); saveProject(); });
+  $("#maxCharge").addEventListener("change", e => { project.maxCharge = e.target.value === "" ? NaN : Number(e.target.value); saveProject(); });
+  $("#homogeneous").addEventListener("change", e => { project.homogeneous = e.target.checked; saveProject(); });
+}
+
+/* =====================================================================
+   generator  (constraint-aware recursive generator, i.e. generator_v2
+   with the counterion recursion completed)
+   ===================================================================== */
+const MAX_RESULTS = 250000;
+
+function isWhole(n){ return typeof n === "number" && Number.isInteger(n); }
+
+function validateProject(){
+  const errors = [];
+  const { maxDent, maxCharge } = project;
+  if (!isWhole(maxDent) || maxDent < 1) errors.push("Maximum Denticity must be a whole number of 1 or more.");
+  if (!isWhole(maxCharge) || maxCharge < 0) errors.push("Maximum Total Counterion Charge must be a whole number of 0 or more.");
+  if (!project.ligands.length) errors.push("Select at least one ligand from the Ligand Library.");
+
+  const ligs = project.ligands.map(it => ({ it, row: db.get("ligands", it.id) }));
+  const cis  = project.counterions.map(it => ({ it, row: db.get("counterions", it.id) }));
+
+  const checkBounds = (list, kind) => {
+    for (const { it, row } of list) {
+      if (!it.constrained) continue;
+      const n = row.name;
+      if (!isWhole(it.min)) errors.push(`${kind} "${n}": Min must be a whole number.`);
+      else if (it.min < 0) errors.push(`${kind} "${n}": Min cannot be negative.`);
+      if (it.max === null || it.max === undefined || Number.isNaN(it.max)) errors.push(`${kind} "${n}": Max is required when constraints are on.`);
+      else if (!isWhole(it.max)) errors.push(`${kind} "${n}": Max must be a whole number.`);
+      else if (it.max < 0) errors.push(`${kind} "${n}": Max cannot be negative.`);
+      if (isWhole(it.min) && isWhole(it.max) && it.min > it.max) errors.push(`${kind} "${n}": Min (${it.min}) is greater than Max (${it.max}).`);
+    }
+  };
+  checkBounds(ligs, "Ligand");
+  checkBounds(cis, "Counterion");
+  for (const { row } of ligs) if (!isWhole(row.denticity) || row.denticity < 1) errors.push(`Ligand "${row.name}" has an invalid denticity.`);
+  for (const { row } of cis) if (!isWhole(row.charge) || row.charge === 0) errors.push(`Counterion "${row.name}" has an invalid charge.`);
+  if (errors.length) return { errors };
+
+  const minDent = ligs.reduce((s, { it, row }) => s + (it.constrained ? it.min * row.denticity : 0), 0);
+  if (minDent > maxDent) errors.push(`The ligand minimums need a total denticity of ${minDent}, which exceeds the Maximum Denticity of ${maxDent}.`);
+  const minCharge = cis.reduce((s, { it, row }) => s + (it.constrained ? it.min * Math.abs(row.charge) : 0), 0);
+  if (minCharge > maxCharge) errors.push(`The counterion minimums need a total charge of ${minCharge}, which exceeds the Maximum Total Counterion Charge of ${maxCharge}.`);
+  if (project.homogeneous) {
+    const required = cis.filter(({ it }) => it.constrained && it.min > 0).map(({ row }) => row.name);
+    if (required.length > 1) errors.push(`"Only homogeneous counterion species" is on, but more than one counterion has a minimum above 0 (${required.join(", ")}). Only one species can appear in each complex.`);
+  }
+  return { errors, ligs, cis };
+}
+
+function generate(){
+  const v = validateProject();
+  if (v.errors.length) return { errors: v.errors, rows: [] };
+  const { ligs, cis } = v;
+  const { maxDent, maxCharge, metal, homogeneous } = project;
+  const warnings = [];
+
+  const ligItems = ligs.map(({ it, row }) => ({
+    row, d: row.denticity, counts: parseFormula(row.formula),
+    min: it.constrained ? it.min : 0, max: it.constrained ? it.max : Infinity,
+  }));
+  const ciItems = cis.map(({ it, row }) => ({
+    row, q: Math.abs(row.charge), counts: parseFormula(row.formula),
+    min: it.constrained ? it.min : 0, max: it.constrained ? it.max : Infinity,
+  }));
+
+  // remaining minimum denticity needed from ligands i..n-1 (for pruning)
+  const minDentSuffix = new Array(ligItems.length + 1).fill(0);
+  for (let i = ligItems.length - 1; i >= 0; i--) minDentSuffix[i] = minDentSuffix[i + 1] + ligItems[i].min * ligItems[i].d;
+  const minChargeSuffix = new Array(ciItems.length + 1).fill(0);
+  for (let i = ciItems.length - 1; i >= 0; i--) minChargeSuffix[i] = minChargeSuffix[i + 1] + ciItems[i].min * ciItems[i].q;
+
+  // recursive ligand combinations
+  const ligCombos = [];
+  const lc = new Array(ligItems.length).fill(0);
+  (function recL(i, remaining){
+    if (i === ligItems.length) {
+      if (lc.some(c => c > 0)) ligCombos.push({ counts: lc.slice(), dent: maxDent - remaining });
+      return;
+    }
+    const L = ligItems[i];
+    const hi = Math.min(L.max, Math.floor((remaining - minDentSuffix[i + 1]) / L.d));
+    for (let c = L.min; c <= hi; c++) { lc[i] = c; recL(i + 1, remaining - c * L.d); }
+    lc[i] = 0;
+  })(0, maxDent);
+
+  // recursive counterion combinations (charge budget, min/max, homogeneous)
+  const ciCombos = [];
+  const cc = new Array(ciItems.length).fill(0);
+  (function recC(i, remaining, species){
+    if (i === ciItems.length) { ciCombos.push({ counts: cc.slice(), charge: maxCharge - remaining }); return; }
+    const C = ciItems[i];
+    const hi = Math.min(C.max, Math.floor((remaining - minChargeSuffix[i + 1]) / C.q));
+    for (let c = C.min; c <= hi; c++) {
+      if (homogeneous && c > 0 && species > 0) break;   // a second species is not allowed
+      cc[i] = c; recC(i + 1, remaining - c * C.q, species + (c > 0 ? 1 : 0));
+    }
+    cc[i] = 0;
+  })(0, maxCharge, 0);
+
+  const total = ligCombos.length * ciCombos.length;
+  if (total > MAX_RESULTS) warnings.push(`${total.toLocaleString()} combinations are possible, so only the first ${MAX_RESULTS.toLocaleString()} were generated. Add constraints or lower the maximums to narrow the search.`);
+
+  const metalCounts = { [metal]: 1 };
+  const rows = [];
+  outer:
+  for (const L of ligCombos) {
+    let lname = "", lcounts = { ...metalCounts };
+    L.counts.forEach((n, i) => {
+      if (!n) return;
+      lname += `(${ligItems[i].row.name})${n > 1 ? n : ""}`;
+      mergeCounts(lcounts, ligItems[i].counts, n);
+    });
+    const cation = `[${metal}${lname}]`;
+    for (const C of ciCombos) {
+      let cname = "", counts = { ...lcounts };
+      C.counts.forEach((n, i) => {
+        if (!n) return;
+        cname += `(${ciItems[i].row.name})${n > 1 ? n : ""}`;
+        mergeCounts(counts, ciItems[i].counts, n);
+      });
+      rows.push({ name: cation + cname, formula: hillFormula(counts), mass: massOf(counts), dent: L.dent, charge: C.charge });
+      if (rows.length >= MAX_RESULTS) break outer;
+    }
+  }
+  return { errors: [], warnings, rows };
+}
+
+/* =====================================================================
+   results widget
+   ===================================================================== */
+const results = { rows: [], view: [], selected: new Set(), sort: { key: null, dir: 1 }, meta: null };
+const RENDER_LIMIT = 3000;
+
+function runGenerate(){
+  const t0 = performance.now();
+  const out = generate();
+  results.rows = out.rows;
+  results.selected.clear();
+  results.sort = { key: null, dir: 1 };
+  const box = $("#resMessages");
+  let html = "";
+  if (out.errors.length) {
+    html += `<div class="msg error"><b>Can't generate with these settings:</b><ul>${out.errors.map(e => `<li>${esc(e)}</li>`).join("")}</ul></div>`;
+  } else if (!out.rows.length) {
+    html += `<div class="msg warn">No feasible combinations satisfy the selected constraints.</div>`;
+  }
+  for (const w of out.warnings || []) html += `<div class="msg warn">${esc(w)}</div>`;
+  box.innerHTML = html;
+  results.meta = out.errors.length ? null : { ms: Math.round(performance.now() - t0) };
+  applySort();
+  renderResults();
+  showTab("pane-res");
+}
+$("#generateBtn").addEventListener("click", runGenerate);
+
+function applySort(){
+  const { key, dir } = results.sort;
+  results.view = results.rows.map((r, i) => i);
+  if (!key) return;
+  const coll = new Intl.Collator(undefined, { numeric: true });
+  results.view.sort((a, b) => {
+    const x = results.rows[a][key], y = results.rows[b][key];
+    return (typeof x === "number" ? x - y : coll.compare(x, y)) * dir;
+  });
+}
+function renderResults(){
+  const { rows, view, selected } = results;
+  const shown = view.slice(0, RENDER_LIMIT);
+  $("#resBody").innerHTML = shown.length ? shown.map(i => {
+    const r = rows[i];
+    return `<tr data-i="${i}" class="${selected.has(i) ? "sel" : ""}"><td class="rname">${esc(r.name)}<div class="sub mono">${esc(r.formula)}</div></td><td class="mono col-formula">${esc(r.formula)}</td><td class="num">${fmtMass(r.mass)}</td><td class="num">${r.dent}</td><td class="num">${r.charge}</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">Build a project and tap <b>Generate</b>.</td></tr>`;
+  let stat = rows.length ? `${rows.length.toLocaleString()} complex${rows.length === 1 ? "" : "es"}` : "";
+  if (rows.length > RENDER_LIMIT) stat += ` · showing first ${RENDER_LIMIT.toLocaleString()} (copy/export include all)`;
+  if (selected.size) stat += ` · ${selected.size} selected`;
+  $("#resStat").textContent = stat;
+  document.querySelectorAll("#resTable th.sortable").forEach(th => {
+    th.querySelector(".arrow").textContent = th.dataset.key === results.sort.key ? (results.sort.dir > 0 ? "▲" : "▼") : "";
+  });
+  const has = rows.length > 0;
+  ["#copyAll", "#exportCsv", "#exportXlsx", "#exportMH"].forEach(s => $(s).disabled = !has);
+  $("#copySel").disabled = !selected.size;
+  $("#clearSel").disabled = !selected.size;
+  $("#resBadge").textContent = rows.length > 999 ? "999+" : rows.length;
+  $("#resBadge").classList.toggle("hidden", !has);
+}
+let lastClicked = null;
+$("#resBody").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-i]");
+  if (!tr) return;
+  const i = Number(tr.dataset.i);
+  if (e.shiftKey && lastClicked !== null) {
+    const a = results.view.indexOf(lastClicked), b = results.view.indexOf(i);
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    for (let k = lo; k <= hi; k++) results.selected.add(results.view[k]);
+  } else if (results.selected.has(i)) results.selected.delete(i);
+  else results.selected.add(i);
+  lastClicked = i;
+  renderResults();
+});
+document.querySelectorAll("#resTable th.sortable").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.key;
+  results.sort = results.sort.key === k ? { key: k, dir: -results.sort.dir } : { key: k, dir: 1 };
+  applySort(); renderResults();
+}));
+const HEADERS = ["Name", "Formula", "Exact Mass", "Total Denticity", "Total Anion Charge"];
+function toTSV(indices){
+  const lines = [HEADERS.join("\t")];
+  for (const i of indices) { const r = results.rows[i]; lines.push([r.name, r.formula, fmtMass(r.mass, 6), r.dent, r.charge].join("\t")); }
+  return lines.join("\n");
+}
+async function copySelected(){
+  if (!results.selected.size) return;
+  const idx = results.view.filter(i => results.selected.has(i));
+  toast(await copyText(toTSV(idx)) ? `Copied ${idx.length} row${idx.length === 1 ? "" : "s"}` : "Copy failed");
+}
+$("#copySel").addEventListener("click", copySelected);
+$("#copyAll").addEventListener("click", async () => {
+  toast(await copyText(toTSV(results.view)) ? `Copied ${results.view.length.toLocaleString()} rows` : "Copy failed");
+});
+$("#clearSel").addEventListener("click", () => { results.selected.clear(); renderResults(); });
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c" && results.selected.size) {
+    const sel = window.getSelection();
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if ((sel && String(sel).length) || /INPUT|TEXTAREA|SELECT/.test(tag)) return;
+    e.preventDefault(); copySelected();
+  }
+});
+
+/* =====================================================================
+   export manager
+   ===================================================================== */
+const csvCell = v => { const s = String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const csvLine = arr => arr.map(csvCell).join(",");
+function exportRows(){ return results.view.map(i => results.rows[i]); }
+function dbVersion(){ return $("#dbVersion").value.trim() || "1.0"; }
+
+$("#dbVersion").addEventListener("input", e => { prefs.dbVersion = e.target.value; savePrefs(); });
+
+$("#exportCsv").addEventListener("click", () => {
+  const lines = [csvLine(["Database Version", dbVersion()]), "", csvLine(HEADERS)];
+  for (const r of exportRows()) lines.push(csvLine([r.name, r.formula, fmtMass(r.mass, 6), r.dent, r.charge]));
+  download(`complexes-${stamp()}.csv`, lines.join("\r\n") + "\r\n", "text/csv;charset=utf-8");
+});
+
+let xlsxPromise = null;
+function loadXLSX(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxPromise) xlsxPromise = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    s.onload = () => res(window.XLSX);
+    s.onerror = () => { xlsxPromise = null; rej(new Error("load failed")); };
+    document.head.appendChild(s);
+  });
+  return xlsxPromise;
+}
+$("#exportXlsx").addEventListener("click", async () => {
+  let XLSX;
+  try { toast("Preparing Excel file…"); XLSX = await loadXLSX(); }
+  catch { toast("Excel export needs an internet connection the first time."); return; }
+  const rows = exportRows();
+  const data = [HEADERS, ...rows.map(r => [r.name, r.formula, Number(r.mass.toFixed(6)), r.dent, r.charge])];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"] = [{ wch: 36 }, { wch: 22 }, { wch: 14 }, { wch: 15 }, { wch: 18 }];
+  const meta = XLSX.utils.aoa_to_sheet([["Database Version", dbVersion()], ["Record Count", rows.length]]);
+  meta["!cols"] = [{ wch: 18 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Results");
+  XLSX.utils.book_append_sheet(wb, meta, "Metadata");
+  const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  download(`complexes-${stamp()}.xlsx`, new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+});
+
+/* ---- MassHunter database CSV ----
+   Built-in format follows Agilent's "Import CSV File Format" (PCDL Manager
+   Quick Start Guide G3336-90030, pp. 33-35), which is also the .csv database
+   format read by Qualitative Analysis Find by Formula:
+   - optional leading comment lines, each starting with "#"
+   - the first non-comment line is the column header (no blank lines before it)
+   - one compound per line, comma separated; text containing a comma is quoted
+   - a compound needs Name plus Formula and/or Mass
+   - Mass must be the NEUTRAL monoisotopic mass of Formula: PCDL Manager recomputes
+     it and rejects rows that differ by > 0.0001 Da (MassErrorsLog.csv)
+   - compounds are treated as neutral unless Cation/Anion = 1
+   - special (non-ASCII) characters make the import fail
+   Line endings are CRLF and the file is plain ASCII without a byte-order mark. */
+const MH_COLUMNS = ["Name", "Formula", "Mass", "Description"];
+
+/* Strip anything PCDL Manager may choke on: accents are folded, other
+   non-ASCII characters and control characters are removed. */
+function mhAscii(s){
+  return String(s).normalize("NFKD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^\x20-\x7E]/g, "").trim();
+}
+function mhDescription(r){
+  return `Total denticity ${r.dent}; total anion charge ${r.charge}`;
+}
+function buildMassHunterBuiltin(version, rows){
+  const now = new Date(), p = n => String(n).padStart(2, "0");
+  const when = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
+  const lines = [
+    "# Metal Complex Mass Generator - MassHunter compound database",
+    `# Database Version: ${mhAscii(version)}`,
+    `# Generated: ${when}`,
+    `# Record Count: ${rows.length}`,
+    "# Mass = neutral monoisotopic mass of Formula. Set ion species/charge states (e.g. -e-) in the Find by Formula method.",
+    csvLine(MH_COLUMNS),
+  ];
+  let changed = 0;
+  for (const r of rows) {
+    const name = mhAscii(r.name);
+    if (name !== r.name) changed++;
+    lines.push(csvLine([name, r.formula, fmtMass(r.mass, 6), mhDescription(r)]));
+  }
+  return { text: lines.join("\r\n") + "\r\n", changed };
+}
+
+function splitCSVLine(line){
+  const out = []; let cur = "", q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+function buildMassHunter(template, version, rows){
+  const eol = template.includes("\r\n") ? "\r\n" : "\n";
+  const lines = template.split(/\r\n|\n/);
+  // Trailing empty element from a final newline: remember it so we keep the file shape.
+  const endsWithNewline = lines.length > 1 && lines[lines.length - 1] === "";
+  if (endsWithNewline) lines.pop();
+
+  // 1. Version: first line whose label cell is "Version" (ignoring #, quotes, colon, spaces)
+  let versionDone = false;
+  for (let li = 0; li < lines.length && !versionDone; li++) {
+    const line = lines[li];
+    const m = /^(\s*#?\s*"?\s*version\s*"?\s*[:,=]\s*)("?)([^",\r\n]*)("?)(.*)$/i.exec(line);
+    if (m) {
+      lines[li] = m[1] + m[2] + version.replace(/"/g, '""') + m[4] + m[5];
+      versionDone = true;
+    }
+  }
+
+  // 2. Column header: last non-comment line containing a "formula" cell
+  let header = null;
+  for (let li = lines.length - 1; li >= 0; li--) {
+    const l = lines[li];
+    if (!l.trim() || l.trim().startsWith("#")) continue;
+    const cells = splitCSVLine(l).map(c => c.trim());
+    if (cells.some(c => /formula/i.test(c))) { header = cells; break; }
+  }
+  if (!header) header = MH_COLUMNS.slice();
+  const find = re => header.findIndex(h => re.test(h));
+  let iName = find(/^(cpd|compound|compound name|name)$/i);
+  if (iName < 0) iName = find(/name|cpd|compound/i);
+  const iFormula = find(/formula/i);
+  const iMass = find(/mass/i);
+  const iDesc = find(/^description$/i);
+
+  let changed = 0;
+  const body = rows.map(r => {
+    const cells = new Array(header.length).fill("");
+    const name = mhAscii(r.name);
+    if (name !== r.name) changed++;
+    if (iName >= 0) cells[iName] = name;
+    if (iFormula >= 0) cells[iFormula] = r.formula;
+    if (iMass >= 0) cells[iMass] = fmtMass(r.mass, 6);
+    if (iDesc >= 0) cells[iDesc] = mhDescription(r);
+    return csvLine(cells);
+  });
+  return { text: lines.join(eol) + eol + body.join(eol) + eol, versionDone, header, changed };
+}
+function renderTemplateName(){
+  $("#mhTemplateName").textContent = prefs.mhTemplate ? (prefs.mhTemplateName || "custom template") : "Agilent PCDL / Find by Formula import format (Name, Formula, Mass, Description)";
+  $("#resetTemplate").classList.toggle("hidden", !prefs.mhTemplate);
+}
+$("#exportMH").addEventListener("click", () => {
+  const rows = exportRows();
+  const out = prefs.mhTemplate ? buildMassHunter(prefs.mhTemplate, dbVersion(), rows) : buildMassHunterBuiltin(dbVersion(), rows);
+  download(`masshunter-database-${stamp()}.csv`, out.text, "text/csv");
+  if (out.changed) toast(`${out.changed} name${out.changed === 1 ? "" : "s"} had special characters removed for MassHunter.`);
+  else if (prefs.mhTemplate && !out.versionDone) toast("No Version line found in the template; it was left unchanged.");
+});
+$("#loadTemplate").addEventListener("click", () => $("#templateFile").click());
+$("#templateFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  const text = await f.text();
+  prefs.mhTemplate = text.replace(/^﻿/, "");
+  prefs.mhTemplateName = f.name;
+  savePrefs(); renderTemplateName();
+  toast(`Template loaded: ${f.name}`);
+});
+$("#resetTemplate").addEventListener("click", () => {
+  prefs.mhTemplate = null; prefs.mhTemplateName = null; savePrefs(); renderTemplateName();
+});
+
+/* ---- library backup / restore ---- */
+$("#backupBtn").addEventListener("click", () => {
+  download(`mcmg-library-${stamp()}.json`, JSON.stringify({ app: "MetalComplexMassGenerator", version: 1, ...db.data }, null, 2), "application/json");
+});
+$("#restoreBtn").addEventListener("click", () => $("#restoreFile").click());
+$("#restoreFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.ligands) || !Array.isArray(data.counterions)) throw new Error("not a library backup");
+    for (const r of [...data.ligands, ...data.counterions]) analyseFormula(r.formula);
+    if (!confirm(`Replace your current libraries with this backup (${data.ligands.length} ligands, ${data.counterions.length} counterions)?`)) return;
+    const maxId = Math.max(0, ...data.ligands.map(r => r.id), ...data.counterions.map(r => r.id));
+    db.data = { nextId: Math.max(data.nextId || 0, maxId + 1), ligands: data.ligands, counterions: data.counterions };
+    db.save();
+    renderAll();
+    toast("Libraries restored");
+  } catch (err) { toast("Could not restore: " + err.message); }
+});
+
+/* =====================================================================
+   navigation & boot
+   ===================================================================== */
+function showTab(id){
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("active", p.id === id));
+  document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
+  if (!matchMedia("(min-width:1100px)").matches) window.scrollTo({ top: 0 });
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+function renderAll(){ renderLigands(); renderCounterions(); renderProject(); }
+
+db.init();
+bindSettings();
+$("#dbVersion").value = prefs.dbVersion || "";
+renderTemplateName();
+renderAll();
+renderResults();
+</script>
+</body>
+</html>
