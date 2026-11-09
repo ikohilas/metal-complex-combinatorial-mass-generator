@@ -366,8 +366,8 @@ details.data summary{cursor:pointer;font-weight:600;font-size:14px;min-height:32
   <div class="dwrap">
     <div class="dhead">
       <h3 id="drawTitle">Draw ligand</h3>
-      <span class="dhint">Dative bonds: choose <b>Dative</b> in Ketcher's bond tools and drag from the donor atom to the acceptor.
-        Link donor atoms to the metal with dative bonds, using <b>M</b> (Extended table → Generic groups) or the real metal; the metal centre isn't counted.</span>
+      <span class="dhint">Dative bond: open the bond tool's menu (small triangle) → <b>Dative Bond</b>, then drag from the donor atom to the acceptor.
+        Bond donor atoms to the metal with dative bonds. A real metal (e.g. Ru) is counted in the formula; the generic <b>M</b> (Extended Table → Atom Generics) is not, and bonds to M set the denticity.</span>
     </div>
     <div class="khost" id="drawHost"><div class="kload" id="drawLoad">Loading Ketcher…</div></div>
     <div class="dstatus">
@@ -481,8 +481,9 @@ function analyseFormula(str){
      type "covalent" (order 1-3), "aromatic" or "dative" (a → b).
 
    Metal centre: the generic "M" atom (also *, A, Q, R#), or any metal
-   atom that is bonded by a dative bond. Metal centres are not counted.
-   A metal with no dative bond (e.g. the Fe of dppf) IS counted.
+   atom that is bonded by a dative bond. A real metal (Ru, Fe …) is
+   counted in the formula, like Ketcher does; only the generic M
+   placeholder is left out, and only bonds to M set the denticity.
 
    Implicit hydrogens use an electron-counting valence model:
      v  = valence electrons − formal charge
@@ -532,8 +533,8 @@ function bondContext(mol){
     const A = byId.get(b.a), B = byId.get(b.b);
     if (!A || !B) continue;
     const ia = info.get(A.id), ib = info.get(B.id), cA = centre.has(A.id), cB = centre.has(B.id);
-    if (cA && !cB) ib.toM = true;
-    if (cB && !cA) ia.toM = true;
+    if (cA && !cB && PLACEHOLDER_LABELS.has(A.el)) ib.toM = true;
+    if (cB && !cA && PLACEHOLDER_LABELS.has(B.el)) ia.toM = true;
     if (b.type === "dative") {
       if (cA && cB) continue;
       if (cA) ib.dOut++;                       // ligand atom donates to the metal
@@ -615,11 +616,17 @@ function analyseStructure(mol0){
   const { centre, info } = bondContext(mol);
   const counts = {}, problems = [], notes = [];
   let charge = 0, ligandAtoms = 0;
-  const donors = new Set(), foreign = new Set(), centreEls = new Set();
+  const donors = new Set(), foreign = new Set();
+  let hasM = false;
   if (!kek.ok) problems.push({ id: null, msg: "The aromatic ring(s) could not be converted to alternating single/double bonds, so H counts may be wrong. Draw the ring with explicit double bonds (Kekulé form).", block: true });
   for (const a of mol.atoms) {
     const it = info.get(a.id);
-    if (centre.has(a.id)) { centreEls.add(a.el); continue; }
+    if (PLACEHOLDER_LABELS.has(a.el)) { hasM = true; continue; }   // generic M: not counted
+    if (centre.has(a.id)) {                                         // real metal centre: counted, no implicit H
+      ligandAtoms++; charge += a.q || 0;
+      counts[a.el] = (counts[a.el] || 0) + 1;
+      continue;
+    }
     ligandAtoms++;
     const q = a.q || 0;
     charge += q;
@@ -650,11 +657,10 @@ function analyseStructure(mol0){
     if (it.note) notes.push({ id: a.id, msg: it.note });
   }
   const infos = [];
-  for (const el of centreEls) if (el in MASSES) infos.push({ id: null, msg: `${el} has a dative bond, so it is treated as the metal centre and not counted.` });
-  for (const el of foreign) notes.push({ id: null, msg: `${el} is counted in the formula and gets no implicit H. If it is the metal centre, bond it with a dative bond or use M instead.` });
+  for (const el of foreign) notes.push({ id: null, msg: `${el} is counted in the formula and gets no implicit H. If it is the metal centre, bond the donor atoms to it with dative bonds so their H counts are right.` });
   const formula = ligandAtoms ? hillFormula(counts) : "";
   return { info, counts, formula, mass: ligandAtoms ? massOf(counts) : 0, charge, problems, notes,
-    infos, hasM: centre.size > 0, donorCount: donors.size, ligandAtoms, centre, kekule: mol };
+    infos, hasM, donorCount: donors.size, ligandAtoms, centre, kekule: mol };
 }
 function fmtChargeSup(q){
   const sup = { "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹" };
@@ -1028,7 +1034,7 @@ function renderDrawStatus(err){
   else {
     const extra = [];
     if (an.charge) extra.push(`net charge ${an.charge > 0 ? "+" : "−"}${Math.abs(an.charge)}`);
-    if (an.hasM) extra.push(`${an.donorCount} donor atom${an.donorCount === 1 ? "" : "s"} bound to the metal`);
+    if (an.hasM) extra.push(`${an.donorCount} donor atom${an.donorCount === 1 ? "" : "s"} bound to M`);
     fEl.textContent = `${an.formula}  ·  exact mass ${fmtMass(an.mass, 6)}${extra.length ? "  ·  " + extra.join("  ·  ") : ""}`;
   }
   if (an) {
@@ -1169,7 +1175,7 @@ $("#drawUse").addEventListener("click", async () => {
   if (an.hasM && an.donorCount > 0 && editor.table === "ligands") {
     const was = $("#edDent").value;
     $("#edDent").value = an.donorCount;
-    if (String(was) !== String(an.donorCount)) toast(`Denticity set to ${an.donorCount} from the bonds to the metal`);
+    if (String(was) !== String(an.donorCount)) toast(`Denticity set to ${an.donorCount} from the bonds to M`);
   }
   $("#drawDlg").close();
   updatePreview();
