@@ -295,12 +295,7 @@ details.data summary{cursor:pointer;font-weight:600;font-size:14px;min-height:32
         <button class="btn" id="exportXlsx" disabled>Excel (.xlsx)</button>
         <button class="btn" id="exportMH" disabled>MassHunter CSV</button>
       </div>
-      <p class="small muted" style="margin:10px 0 6px">MassHunter template: <span id="mhTemplateName"></span></p>
-      <div class="btn-row">
-        <button class="btn ghost" id="loadTemplate">Load template CSV</button>
-        <button class="btn ghost hidden" id="resetTemplate">Use built-in template</button>
-        <input type="file" id="templateFile" accept=".csv,text/csv,text/plain" class="hidden">
-      </div>
+      <p class="small muted" style="margin:10px 0 6px">MassHunter template: masshunter_template.csv</p>
     </div>
   </section>
 </main>
@@ -735,6 +730,17 @@ function mergeCounts(target, src, mult){
    storage  (replaces database.py / SQLite with localStorage)
    ===================================================================== */
 const DB_KEY = "mcmg.db.v1", PROJ_KEY = "mcmg.project.v1", PREF_KEY = "mcmg.prefs.v1";
+const DEFAULT_LIGANDS = [
+  { name: "py",   formula: "C5H5N",   denticity: 1 },
+  { name: "bpy",  formula: "C10H8N2", denticity: 2 },
+  { name: "phen", formula: "C12H8N2", denticity: 2 },
+  { name: "NH3",  formula: "H3N",     denticity: 1 },
+  { name: "Cl",   formula: "Cl",     denticity: 1 },
+  { name: "ACN",  formula: "C2H3N",   denticity: 1 },
+  { name: "DMSO", formula: "C2H6OS",  denticity: 1 },
+  { name: "OH",   formula: "HO",     denticity: 1 },
+  { name: "H2O",  formula: "H2O",    denticity: 1 },
+];
 const DEFAULT_COUNTERIONS = [
   { name: "Cl",      formula: "Cl",      charge: -1 },
   { name: "PF6",     formula: "PF6",     charge: -1 },
@@ -757,6 +763,16 @@ const db = {
     this.data = loadJSON(DB_KEY, null) || { nextId: 1, ligands: [], counterions: [] };
     if (!Array.isArray(this.data.ligands)) this.data.ligands = [];
     if (!Array.isArray(this.data.counterions)) this.data.counterions = [];
+    const maxId = [...this.data.ligands, ...this.data.counterions]
+      .reduce((max, row) => Number.isInteger(row.id) ? Math.max(max, row.id) : max, 0);
+    if (!Number.isInteger(this.data.nextId) || this.data.nextId <= maxId) this.data.nextId = maxId + 1;
+    const ligandNames = new Set(this.data.ligands.map(ligand => String(ligand.name || "").toLowerCase()));
+    for (const ligand of DEFAULT_LIGANDS) {
+      if (!ligandNames.has(ligand.name.toLowerCase())) {
+        this.add("ligands", ligand, false);
+        ligandNames.add(ligand.name.toLowerCase());
+      }
+    }
     if (this.data.counterions.length === 0) {          // seed if empty
       for (const c of DEFAULT_COUNTERIONS) this.add("counterions", c, false);
     }
@@ -808,7 +824,7 @@ const project = Object.assign({
   ligands: [],      // {id, constrained, min, max}
   counterions: [],  // {id, constrained, min, max}
 }, loadJSON(PROJ_KEY, {}));
-const prefs = Object.assign({ dbVersion: "1.0", mhTemplate: null, mhTemplateName: null }, loadJSON(PREF_KEY, {}));
+const prefs = Object.assign({ dbVersion: "1.0" }, loadJSON(PREF_KEY, {}));
 function saveProject(){ saveJSON(PROJ_KEY, project); }
 function savePrefs(){ saveJSON(PREF_KEY, prefs); }
 
@@ -1545,137 +1561,40 @@ $("#exportXlsx").addEventListener("click", async () => {
   download(`complexes-${stamp()}.xlsx`, new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
 });
 
-/* ---- MassHunter database CSV ----
-   Built-in format follows Agilent's "Import CSV File Format" (PCDL Manager
-   Quick Start Guide G3336-90030, pp. 33-35), which is also the .csv database
-   format read by Qualitative Analysis Find by Formula:
-   - optional leading comment lines, each starting with "#"
-   - the first non-comment line is the column header (no blank lines before it)
-   - one compound per line, comma separated; text containing a comma is quoted
-   - a compound needs Name plus Formula and/or Mass
-   - Mass must be the NEUTRAL monoisotopic mass of Formula: PCDL Manager recomputes
-     it and rejects rows that differ by > 0.0001 Da (MassErrorsLog.csv)
-   - compounds are treated as neutral unless Cation/Anion = 1
-   - special (non-ASCII) characters make the import fail
-   Line endings are CRLF and the file is plain ASCII without a byte-order mark. */
-const MH_COLUMNS = ["Name", "Formula", "Mass", "Description"];
-
-/* Strip anything PCDL Manager may choke on: accents are folded, other
-   non-ASCII characters and control characters are removed. */
-function mhAscii(s){
-  return String(s).normalize("NFKD").replace(/[̀-ͯ]/g, "")
-    .replace(/[^\x20-\x7E]/g, "").trim();
-}
-function mhDescription(r){
-  return `Total denticity ${r.dent}; total anion charge ${r.charge}`;
-}
-function buildMassHunterBuiltin(version, rows){
-  const now = new Date(), p = n => String(n).padStart(2, "0");
-  const when = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
-  const lines = [
-    "# Metal Complex Mass Generator - MassHunter compound database",
-    `# Database Version: ${mhAscii(version)}`,
-    `# Generated: ${when}`,
-    `# Record Count: ${rows.length}`,
-    "# Mass = neutral monoisotopic mass of Formula. Set ion species/charge states (e.g. -e-) in the Find by Formula method.",
-    csvLine(MH_COLUMNS),
-  ];
-  let changed = 0;
-  for (const r of rows) {
-    const name = mhAscii(r.name);
-    if (name !== r.name) changed++;
-    lines.push(csvLine([name, r.formula, fmtMass(r.mass, 6), mhDescription(r)]));
+/* Use the bundled template as-is; only its version value and appended records are generated. */
+let massHunterTemplatePromise = null;
+function loadMassHunterTemplate(){
+  if (!massHunterTemplatePromise) {
+    massHunterTemplatePromise = fetch(new URL("masshunter_template.csv", document.baseURI), { cache: "no-cache" })
+      .then(response => {
+        if (!response.ok) throw new Error(`Could not load masshunter_template.csv (${response.status}).`);
+        return response.text();
+      });
   }
-  return { text: lines.join("\r\n") + "\r\n", changed };
-}
-
-function splitCSVLine(line){
-  const out = []; let cur = "", q = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (q) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') q = false;
-      else cur += ch;
-    } else if (ch === '"') q = true;
-    else if (ch === ",") { out.push(cur); cur = ""; }
-    else cur += ch;
-  }
-  out.push(cur);
-  return out;
+  return massHunterTemplatePromise.catch(error => {
+    massHunterTemplatePromise = null;
+    throw error;
+  });
 }
 function buildMassHunter(template, version, rows){
-  const eol = template.includes("\r\n") ? "\r\n" : "\n";
-  const lines = template.split(/\r\n|\n/);
-  // Trailing empty element from a final newline: remember it so we keep the file shape.
-  const endsWithNewline = lines.length > 1 && lines[lines.length - 1] === "";
-  if (endsWithNewline) lines.pop();
-
-  // 1. Version: first line whose label cell is "Version" (ignoring #, quotes, colon, spaces)
-  let versionDone = false;
-  for (let li = 0; li < lines.length && !versionDone; li++) {
-    const line = lines[li];
-    const m = /^(\s*#?\s*"?\s*version\s*"?\s*[:,=]\s*)("?)([^",\r\n]*)("?)(.*)$/i.exec(line);
-    if (m) {
-      lines[li] = m[1] + m[2] + version.replace(/"/g, '""') + m[4] + m[5];
-      versionDone = true;
-    }
-  }
-
-  // 2. Column header: last non-comment line containing a "formula" cell
-  let header = null;
-  for (let li = lines.length - 1; li >= 0; li--) {
-    const l = lines[li];
-    if (!l.trim() || l.trim().startsWith("#")) continue;
-    const cells = splitCSVLine(l).map(c => c.trim());
-    if (cells.some(c => /formula/i.test(c))) { header = cells; break; }
-  }
-  if (!header) header = MH_COLUMNS.slice();
-  const find = re => header.findIndex(h => re.test(h));
-  let iName = find(/^(cpd|compound|compound name|name)$/i);
-  if (iName < 0) iName = find(/name|cpd|compound/i);
-  const iFormula = find(/formula/i);
-  const iMass = find(/mass/i);
-  const iDesc = find(/^description$/i);
-
-  let changed = 0;
-  const body = rows.map(r => {
-    const cells = new Array(header.length).fill("");
-    const name = mhAscii(r.name);
-    if (name !== r.name) changed++;
-    if (iName >= 0) cells[iName] = name;
-    if (iFormula >= 0) cells[iFormula] = r.formula;
-    if (iMass >= 0) cells[iMass] = fmtMass(r.mass, 6);
-    if (iDesc >= 0) cells[iDesc] = mhDescription(r);
-    return csvLine(cells);
-  });
-  return { text: lines.join(eol) + eol + body.join(eol) + eol, versionDone, header, changed };
-}
-function renderTemplateName(){
-  $("#mhTemplateName").textContent = prefs.mhTemplate ? (prefs.mhTemplateName || "custom template") : "Agilent PCDL / Find by Formula import format (Name, Formula, Mass, Description)";
-  $("#resetTemplate").classList.toggle("hidden", !prefs.mhTemplate);
+  if (/[,\r\n]/.test(version)) throw new Error("Database version cannot contain commas or line breaks.");
+  const versionPattern = /^([ \t]*#+[ \t]*Version:[ \t]*)([^,\r\n]*?)([ \t]*)(,.*)?$/im;
+  if (!versionPattern.test(template)) throw new Error("No Version line found in masshunter_template.csv.");
+  const updatedTemplate = template.replace(versionPattern, (_line, prefix, _oldVersion, trailingSpace, suffix = "") =>
+    prefix + version + trailingSpace + suffix
+  );
+  const eol = template.match(/\r\n|\n|\r/);
+  const lineEnding = eol ? eol[0] : "\r\n";
+  const records = rows.map(r => csvLine([r.formula, "", fmtMass(r.mass, 6), r.name, ""]));
+  const needsSeparator = !updatedTemplate.endsWith("\r\n") && !updatedTemplate.endsWith("\n") && !updatedTemplate.endsWith("\r");
+  return updatedTemplate + (needsSeparator ? lineEnding : "") + records.join(lineEnding) + lineEnding;
 }
 $("#exportMH").addEventListener("click", () => {
-  const rows = exportRows();
-  const out = prefs.mhTemplate ? buildMassHunter(prefs.mhTemplate, dbVersion(), rows) : buildMassHunterBuiltin(dbVersion(), rows);
-  download(`masshunter-database-${stamp()}.csv`, out.text, "text/csv");
-  if (out.changed) toast(`${out.changed} name${out.changed === 1 ? "" : "s"} had special characters removed for MassHunter.`);
-  else if (prefs.mhTemplate && !out.versionDone) toast("No Version line found in the template; it was left unchanged.");
+  loadMassHunterTemplate().then(template => {
+    const text = buildMassHunter(template, dbVersion(), exportRows());
+    download(`masshunter-database-${stamp()}.csv`, text, "text/csv");
+  }).catch(error => toast(`MassHunter export failed: ${error.message}`));
 });
-$("#loadTemplate").addEventListener("click", () => $("#templateFile").click());
-$("#templateFile").addEventListener("change", async e => {
-  const f = e.target.files[0]; e.target.value = "";
-  if (!f) return;
-  const text = await f.text();
-  prefs.mhTemplate = text.replace(/^﻿/, "");
-  prefs.mhTemplateName = f.name;
-  savePrefs(); renderTemplateName();
-  toast(`Template loaded: ${f.name}`);
-});
-$("#resetTemplate").addEventListener("click", () => {
-  prefs.mhTemplate = null; prefs.mhTemplateName = null; savePrefs(); renderTemplateName();
-});
-
 /* ---- library backup / restore ---- */
 $("#backupBtn").addEventListener("click", () => {
   download(`mcmg-library-${stamp()}.json`, JSON.stringify({ app: "MetalComplexMassGenerator", version: 1, ...db.data }, null, 2), "application/json");
@@ -1712,7 +1631,6 @@ function renderAll(){ renderLigands(); renderCounterions(); renderProject(); }
 db.init();
 bindSettings();
 $("#dbVersion").value = prefs.dbVersion || "";
-renderTemplateName();
 renderAll();
 renderResults();
 </script>
